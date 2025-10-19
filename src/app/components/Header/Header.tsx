@@ -7,6 +7,7 @@ import {
     SocialLinks, UserButtonLink, UserButtons,
     Wrapper
 } from "@/app/components/Header/HeaderStyles";
+import {redirect} from "next/navigation";
 
 export default function Header(){
     return (
@@ -27,7 +28,7 @@ export default function Header(){
                             <Logo src="/logo.svg" alt="Logotype"/>
                         </LogoContainer>
                         <UserButtons>
-                            <UserButtonLink href={'#'}>Войти</UserButtonLink>
+                            <UserButtonLink href={'/pages/registration'}>Войти</UserButtonLink>
                             <UserButtonLink href={'#'}>
                                 <img src="/cart.svg" alt="Cart"/>
                             </UserButtonLink>

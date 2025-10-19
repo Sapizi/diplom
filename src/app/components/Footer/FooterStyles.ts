@@ -18,7 +18,7 @@ export const FooterLinks = styled.div`
     display: flex;
     gap: 28px;
 `
-export const FooterPhoneAndTime = styled.a`
+export const FooterPhoneAndTime = styled.div`
     display: flex;
     flex-direction: column;
     align-items: end;
