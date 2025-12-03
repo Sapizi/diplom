@@ -6,7 +6,7 @@ export const Wrapper = styled.div`
     box-sizing: border-box;
 `
 export const HeaderContainer = styled.header`
-    width: 1920px;
+    width: 100vw;
     height: 100px;
     display: flex;
     align-items: center;
