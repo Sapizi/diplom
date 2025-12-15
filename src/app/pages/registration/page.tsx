@@ -175,7 +175,7 @@ export default function RegistrationPage() {
 
           <CheckBoxText style={{ marginTop: '20px', textAlign: 'center' }}>
             Уже есть аккаунт?{' '}
-            <CheckBoxLink href="/login">Войти</CheckBoxLink>
+            <CheckBoxLink href="/pages/login">Войти</CheckBoxLink>
           </CheckBoxText>
         </LoginForm>
       </LoginContainer>
