@@ -16,7 +16,7 @@ import {
 } from '@/app/pages/registration/RegistrationStyles';
 import { useState } from 'react';
 import { supabase } from '../../../../lib/supabase';
-
+//
 export default function RegistrationPage() {
   const [formData, setFormData] = useState({
     name: '',
