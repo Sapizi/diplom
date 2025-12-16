@@ -14,6 +14,7 @@ import {
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../../lib/supabase';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 
 interface UserProfile {
@@ -21,21 +22,14 @@ interface UserProfile {
   name: string;
 }
 
-interface UserSession {
-  user: {
-    id: string;
-    email: string;
-  };
-}
-
 export default function Header() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Сначала получаем текущую сессию
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
@@ -80,7 +74,6 @@ export default function Header() {
       }
     };
 
-
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session) {
@@ -91,16 +84,24 @@ export default function Header() {
       }
     );
 
-    
     initializeAuth();
-
 
     return () => {
       authListener.subscription.unsubscribe();
     };
   }, []);
 
- 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      router.push('/');
+      router.refresh();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   if (isLoading) {
     return (
       <HeaderContainer>
@@ -151,26 +152,27 @@ export default function Header() {
           <UserButtons>
             {user ? (
               <>
-                <Link 
-                  href="/pages/user/account"
-                  className="user-name"
-                  style={{
-                    color: '#333',
-                    textDecoration: 'none',
-                    fontWeight: '500',
-                    fontSize: '16px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  {user.name}
-                </Link>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <Link 
+                    href="/pages/user/account"
+                    style={{
+                      color: '#333',
+                      textDecoration: 'none',
+                      fontWeight: '500',
+                      fontSize: '16px',
+                    }}
+                  >
+                    {user.name}
+                  </Link>
+                  
+                </div>
                 <Link href="/cart">
                   <img src="/cart.svg" alt="Cart" />
                 </Link>
               </>
             ) : (
               <>
-                <UserButtonLink href="/login">Войти</UserButtonLink>
+                <UserButtonLink href="/pages/login">Войти</UserButtonLink>
                 <UserButtonLink href="/cart">
                   <img src="/cart.svg" alt="Cart" />
                 </UserButtonLink>
