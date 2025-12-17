@@ -87,7 +87,7 @@ interface UserProfile {
           <ImageContainer>
             <Avatar src={profile.avatar_url || '/default-avatar.svg'} alt="Аватар" />
             <Name>{profile.name}</Name>
-            <ChangeLink href="/pages/user/changeprofile">Редактировать профиль</ChangeLink>
+            <ChangeLink href="/pages/user/accountSettings">Редактировать профиль</ChangeLink>
             <button
                     onClick={handleLogout}
                     style={{
