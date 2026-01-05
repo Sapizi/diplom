@@ -26,8 +26,6 @@ interface UserProfile {
         console.error("Пользователь не авторизован");
         return;
       }
-
-      // Получаем профиль
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('name, avatar_url, bonus_points')
@@ -40,8 +38,6 @@ interface UserProfile {
       }
 
       setProfile(profileData);
-
-      // Считаем заказы
       const { count: ordersCount, error: ordersError } = await supabase
         .from('orders')
         .select('*', { count: 'exact', head: true })
@@ -50,8 +46,6 @@ interface UserProfile {
       if (!ordersError) {
         setOrderCount(ordersCount || 0);
       }
-
-      // Считаем адреса
       const { count: addressesCount, error: addressesError } = await supabase
         .from('addresses')
         .select('*', { count: 'exact', head: true })

@@ -17,7 +17,6 @@ export default function AccountSettings() {
   const [loading, setLoading] = useState<boolean>(true)
   const [uploading, setUploading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
-
   useEffect(() => {
     const fetchProfile = async () => {
       const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -26,41 +25,34 @@ export default function AccountSettings() {
         setLoading(false)
         return
       }
-
       const { data, error } = await supabase
         .from('profiles')
         .select('name, phone, avatar_url')
         .eq('id', user.id)
         .single()
-
-      if (error && error.code !== 'PGRST116') { // PGRST116 = not found
+      if (error && error.code !== 'PGRST116') {
         setError("Ошибка загрузки профиля")
       } else {
         setName(data?.name || '')
         setPhone(data?.phone || '')
         setAvatarUrl(data?.avatar_url || '')
       }
-
       setLoading(false)
     }
-
     fetchProfile()
   }, [])
-
   const handleUpdate = async (field: string, value: string) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       setError("Пользователь не авторизован")
       return
     }
-
     const { error } = await supabase
       .from('profiles')
       .upsert({
         id: user.id,
         [field]: value,
       })
-
     if (error) {
       setError(`Ошибка обновления: ${error.message}`)
     } else {
@@ -68,75 +60,54 @@ export default function AccountSettings() {
       alert("Данные успешно обновлены!")
     }
   }
-
   const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
     setUploading(true)
     setError(null)
-
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       setError("Пользователь не авторизован")
       setUploading(false)
       return
     }
-
     const file = event.target.files?.[0]
     if (!file) {
       setUploading(false)
       return
     }
-
     if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
       setError('Пожалуйста, загрузите изображение (JPEG, PNG, GIF)')
       setUploading(false)
       return
     }
-
-    // ⚠️ Безопасное имя файла: без пробелов, кириллицы и спецсимволов
     const fileExt = file.name.split('.').pop()
     const cleanFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`
     const fileName = `${user.id}/${cleanFileName}`
-
-    // Загружаем в Storage
     const { error: uploadError } = await supabase.storage
       .from('avatars')
       .upload(fileName, file, { upsert: true })
-
     if (uploadError) {
       setError(`Ошибка загрузки: ${uploadError.message}`)
       setUploading(false)
       return
     }
-
-    // Получаем публичный URL
     const { data: { publicUrl } } = supabase.storage
       .from('avatars')
       .getPublicUrl(fileName)
-
-    // Сохраняем в профиль
     const { error: updateError } = await supabase
       .from('profiles')
       .upsert({
         id: user.id,
         avatar_url: publicUrl,
       })
-
     if (updateError) {
       setError(`Ошибка сохранения аватара: ${updateError.message}`)
     } else {
       alert("Аватар успешно загружен!")
-      // 🔁 Обновляем страницу профиля
-      // Или перенаправляем:
-      // router.push('/pages/user/account')
     }
-
     setUploading(false)
   }
-
-
   if (loading) return <div>Загрузка...</div>
   if (error) return <div style={{ color: 'red' }}>{error}</div>
-
   return (
     <>
       <Header />
@@ -158,8 +129,6 @@ export default function AccountSettings() {
             >
               Сохранить имя
             </button>
-
-            {/* Телефон */}
             <LoginFormLabel>Телефон</LoginFormLabel>
             <LoginFormInput
               value={phone}
@@ -173,8 +142,6 @@ export default function AccountSettings() {
             >
               Сохранить телефон
             </button>
-
-            {/* Фото профиля — ЗАГРУЗКА ФАЙЛА */}
             <LoginFormLabel>Фото профиля</LoginFormLabel>
             <div style={{ marginTop: '8px', marginBottom: '8px' }}>
               {avatarUrl && (

@@ -1,19 +1,7 @@
 'use client';
 import Header from "@/app/components/Header/Header";
 import Footer from "@/app/components/Footer/Footer";
-import {
-  CheckboxContainer,
-  CheckBoxLink,
-  CheckBoxText,
-  LoginButton,
-  LoginCheckbox,
-  LoginContainer,
-  LoginForm,
-  LoginFormInput,
-  LoginFormLabel,
-  LoginFormTitle,
-  LoginInputContainer
-} from "../registration/RegistrationStyles";
+import {CheckboxContainer,CheckBoxLink,CheckBoxText,LoginButton,LoginCheckbox,LoginContainer,LoginForm,LoginFormInput,LoginFormLabel,LoginFormTitle,LoginInputContainer} from "../registration/RegistrationStyles";
 import { useState } from 'react';
 import { supabase } from '../../../../lib/supabase';
 import { useRouter } from 'next/navigation';

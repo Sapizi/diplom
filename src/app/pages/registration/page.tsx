@@ -2,21 +2,9 @@
 
 import Header from '@/app/components/Header/Header';
 import Footer from '@/app/components/Footer/Footer';
-import {
-  CheckboxContainer,
-  CheckBoxLink,
-  CheckBoxText,
-  LoginButton,
-  LoginContainer,
-  LoginForm,
-  LoginFormInput,
-  LoginFormLabel,
-  LoginFormTitle,
-  LoginInputContainer,
-} from '@/app/pages/registration/RegistrationStyles';
+import {CheckboxContainer,CheckBoxLink,CheckBoxText,LoginButton,LoginContainer,LoginForm,LoginFormInput,LoginFormLabel,LoginFormTitle,LoginInputContainer,} from '@/app/pages/registration/RegistrationStyles';
 import { useState } from 'react';
 import { supabase } from '../../../../lib/supabase';
-//
 export default function RegistrationPage() {
   const [formData, setFormData] = useState({
     name: '',

@@ -1,0 +1,17 @@
+# Dockerfile
+FROM node:20-alpine AS base
+
+# Установка зависимостей
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Копируем исходники
+COPY . .
+
+# Сборка
+RUN npm run build
+
+# Запуск
+EXPOSE 3000
+CMD ["npm", "start"]
