@@ -61,6 +61,8 @@ export const UserGreyBlock = styled.div`
     height: 268px;
     border-radius: 10px;
     background-color: #ededed;
+    cursor: pointer;
+    
 `
 export const GreyBlockText = styled.p`
     color: black;

@@ -1,15 +1,13 @@
 'use client'
-
 import Footer from "@/app/components/Footer/Footer"
 import Header from "@/app/components/Header/Header"
 import { Wrapper } from "@/app/components/Header/HeaderStyles"
 import { Container } from "../account/AccountStyles"
 import { Title } from "@/app/MainPageStyles"
 import { ChangeForm } from "./AccountSettingsStyles"
-import { LoginFormInput, LoginFormLabel } from "../../registration/RegistrationStyles"
+import { LoginButton, LoginFormInput, LoginFormLabel } from "../../registration/RegistrationStyles"
 import { useEffect, useState } from "react"
 import { supabase } from "../../../../../lib/supabase"
-
 export default function AccountSettings() {
   const [name, setName] = useState<string>('')
   const [phone, setPhone] = useState<string>('')
@@ -74,7 +72,7 @@ export default function AccountSettings() {
       setUploading(false)
       return
     }
-    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+    if (!['image/jpeg', 'image/png'].includes(file.type)) {
       setError('Пожалуйста, загрузите изображение (JPEG, PNG, GIF)')
       setUploading(false)
       return
@@ -115,33 +113,32 @@ export default function AccountSettings() {
         <Container>
           <Title>Редактирование профиля</Title>
           <ChangeForm>
-            {/* Имя */}
             <LoginFormLabel>Имя</LoginFormLabel>
             <LoginFormInput
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Введите имя"
             />
-            <button
+            <LoginButton
               type="button"
               onClick={() => handleUpdate('name', name)}
               style={{ marginTop: '8px', padding: '6px 12px' }}
             >
               Сохранить имя
-            </button>
+            </LoginButton>
             <LoginFormLabel>Телефон</LoginFormLabel>
             <LoginFormInput
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="+79001234567"
             />
-            <button
+            <LoginButton
               type="button"
               onClick={() => handleUpdate('phone', phone)}
               style={{ marginTop: '8px', padding: '6px 12px' }}
             >
               Сохранить телефон
-            </button>
+            </LoginButton>
             <LoginFormLabel>Фото профиля</LoginFormLabel>
             <div style={{ marginTop: '8px', marginBottom: '8px' }}>
               {avatarUrl && (
@@ -161,7 +158,7 @@ export default function AccountSettings() {
             />
             {uploading && <div>Загрузка...</div>}
             <div style={{ fontSize: '12px', color: '#666' }}>
-              Поддерживаются: JPG, PNG, GIF
+              Поддерживаются: JPG, PNG
             </div>
           </ChangeForm>
         </Container>
