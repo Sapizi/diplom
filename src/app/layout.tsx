@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-
+import { SpeedInsights } from '@vercel/speed-insights/next';
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -10,6 +10,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
