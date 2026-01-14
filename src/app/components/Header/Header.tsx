@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation';
 interface UserProfile {
   id: string;
   name: string;
+  isAdmin: boolean;
 }
 
 export default function Header() {
@@ -46,33 +47,36 @@ export default function Header() {
     };
 
     const loadUserProfile = async (session: any) => {
-      try {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('name')
-          .eq('id', session.user.id)
-          .single();
+  try {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('name, "isAdmin"')
+      .eq('id', session.user.id)
+      .single();
 
-        if (error) {
-          console.error('Profile fetch error:', error);
-          setUser({
-            id: session.user.id,
-            name: session.user.email.split('@')[0] || 'Пользователь'
-          });
-        } else {
-          setUser({
-            id: session.user.id,
-            name: profile.name || session.user.email.split('@')[0] || 'Пользователь'
-          });
-        }
-      } catch (err) {
-        console.error('Profile error:', err);
-        setUser({
-          id: session.user.id,
-          name: session.user.email.split('@')[0] || 'Пользователь'
-        });
-      }
-    };
+    if (error) {
+      console.error('Profile fetch error:', error);
+      setUser({
+        id: session.user.id,
+        name: session.user.email.split('@')[0] || 'Пользователь',
+        isAdmin: false,
+      });
+    } else {
+      setUser({
+        id: session.user.id,
+        name: profile.name || session.user.email.split('@')[0] || 'Пользователь',
+        isAdmin: Boolean(profile.isAdmin),
+      });
+    }
+  } catch (err) {
+    console.error('Profile error:', err);
+    setUser({
+      id: session.user.id,
+      name: session.user.email.split('@')[0] || 'Пользователь',
+      isAdmin: false,
+    });
+  }
+};
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -120,7 +124,6 @@ export default function Header() {
               <Logo src="/logo.svg" alt="Logotype" />
             </LogoContainer>
             <UserButtons>
-              <span>Загрузка...</span>
               <Link href="/cart">
                 <img src="/cart.svg" alt="Cart" />
               </Link>
@@ -151,33 +154,32 @@ export default function Header() {
 
           <UserButtons>
             {user ? (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <Link 
-                    href="/pages/user/account"
-                    style={{
-                      color: '#333',
-                      textDecoration: 'none',
-                      fontWeight: '500',
-                      fontSize: '16px',
-                    }}
-                  >
-                    {user.name}
-                  </Link>
-                  
-                </div>
-                <Link href="/cart">
-                  <img src="/cart.svg" alt="Cart" />
-                </Link>
-              </>
-            ) : (
-              <>
-                <UserButtonLink href="/pages/login">Войти</UserButtonLink>
-                <UserButtonLink href="/cart">
-                  <img src="/cart.svg" alt="Cart" />
-                </UserButtonLink>
-              </>
-            )}
+  <>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <Link 
+        href={user.isAdmin ? "/pages/admin/main" : "/pages/user/account"}
+        style={{
+          color: '#333',
+          textDecoration: 'none',
+          fontWeight: '500',
+          fontSize: '16px',
+        }}
+      >
+        {user.isAdmin ? "Админка" : user.name}
+      </Link>
+    </div>
+    <Link href="/cart">
+      <img src="/cart.svg" alt="Cart" />
+    </Link>
+  </>
+) : (
+  <>
+    <UserButtonLink href="/pages/login">Войти</UserButtonLink>
+    <UserButtonLink href="/cart">
+      <img src="/cart.svg" alt="Cart" />
+    </UserButtonLink>
+  </>
+)}
           </UserButtons>
         </HeaderContent>
       </Wrapper>

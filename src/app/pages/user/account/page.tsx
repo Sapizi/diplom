@@ -6,6 +6,7 @@ import { Avatar, ChangeLink, ImageContainer, Name, Container, Bonus, UserActivit
 import { useEffect, useState } from "react";
 import { supabase } from "../../../../../lib/supabase";
 import { useRouter } from 'next/navigation';
+
 export default function AccountPage() {
   const [profile, setProfile] = useState<{
     name: string;
