@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { redirect, useRouter } from 'next/navigation';
 
 import Header from "@/app/components/Header/Header";
 import Footer from "@/app/components/Footer/Footer";
@@ -13,13 +13,14 @@ import { GreyBlockText } from "../../user/account/AccountStyles";
 import { supabase } from "../../../../../lib/supabase";
 
 export default function AdminMain() {
+  const redirect = () => {
+
+  }
   const router = useRouter();
 
   const [usersCount, setUsersCount] = useState(0);
   const [menuCount, setMenuCount] = useState(0);
   const [ordersCount, setOrdersCount] = useState(0);
-
-  // ---------- загрузка счётчиков ----------
   const fetchCounts = async () => {
     const { count: users } = await supabase
       .from('profiles')
@@ -38,7 +39,6 @@ export default function AdminMain() {
     setOrdersCount(orders ?? 0);
   };
 
-  // ---------- realtime ----------
   useEffect(() => {
     fetchCounts();
 
@@ -66,7 +66,6 @@ export default function AdminMain() {
     };
   }, []);
 
-  // ---------- выход ----------
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/');
@@ -95,19 +94,19 @@ export default function AdminMain() {
         </button>
 
         <AdminContainer>
-          <AdminBlock>
+          <AdminBlock href={'/pages/admin/users'}>
             <GreyBlockText>
               Пользователи: <b>{usersCount}</b>
             </GreyBlockText>
           </AdminBlock>
 
-          <AdminBlock>
-            <GreyBlockText>
+          <AdminBlock href={'/pages/admin/menu'}>
+            <GreyBlockText onClick={redirect}>
               Позиции меню: <b>{menuCount}</b>
             </GreyBlockText>
           </AdminBlock>
 
-          <AdminBlock>
+          <AdminBlock href={'/pages/admin/orders'}>
             <GreyBlockText>
               Заказы: <b>{ordersCount}</b>
             </GreyBlockText>
