@@ -44,12 +44,13 @@ type CategoryType = {
 }
 
 export default function AdminMenuPage() {
+  // --- Стейты ---
   const [menu, setMenu] = useState<MenuItemType[]>([])
   const [categories, setCategories] = useState<CategoryType[]>([])
   const [loading, setLoading] = useState(true)
-  const [isOpen, setIsOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<MenuItemType | null>(null)
 
+  const [isMenuPopupOpen, setIsMenuPopupOpen] = useState(false)
+  const [editingItem, setEditingItem] = useState<MenuItemType | null>(null)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
@@ -57,8 +58,15 @@ export default function AdminMenuPage() {
   const [image, setImage] = useState<File | null>(null)
 
   const [searchTerm, setSearchTerm] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('') // фильтр по категориям
+  const [categoryFilter, setCategoryFilter] = useState('')
+
+  // --- Попап создания категории ---
+  const [isCategoryPopupOpen, setIsCategoryPopupOpen] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+
+  // --- Загрузка меню ---
   const fetchMenu = async () => {
+    setLoading(true)
     const { data, error } = await supabase
       .from('menu_items')
       .select('*')
@@ -66,12 +74,14 @@ export default function AdminMenuPage() {
 
     if (error) {
       console.error(error)
+      setLoading(false)
       return
     }
     setMenu(data || [])
     setLoading(false)
   }
 
+  // --- Загрузка категорий ---
   const fetchCategories = async () => {
     const { data, error } = await supabase
       .from('categories')
@@ -89,6 +99,8 @@ export default function AdminMenuPage() {
     fetchMenu()
     fetchCategories()
   }, [])
+
+  // --- Удаление позиции ---
   const handleDelete = async (id: string) => {
     const confirmDelete = confirm('Удалить эту позицию?')
     if (!confirmDelete) return
@@ -103,27 +115,29 @@ export default function AdminMenuPage() {
     }
     setMenu(prev => prev.filter(item => item.id !== id))
   }
-  const openCreatePopup = () => {
+
+  // --- Попап меню ---
+  const openCreateMenuPopup = () => {
     setEditingItem(null)
     setName('')
     setDescription('')
     setPrice('')
     setCategoryId('')
     setImage(null)
-    setIsOpen(true)
+    setIsMenuPopupOpen(true)
   }
 
-  const openEditPopup = (item: MenuItemType) => {
+  const openEditMenuPopup = (item: MenuItemType) => {
     setEditingItem(item)
     setName(item.name)
     setDescription(item.description)
     setPrice(item.price.toString())
     setCategoryId(item.category_id)
     setImage(null)
-    setIsOpen(true)
+    setIsMenuPopupOpen(true)
   }
 
-  const handleSave = async () => {
+  const handleSaveMenu = async () => {
     if (!name || !price || !categoryId) {
       alert('Заполни все поля')
       return
@@ -180,7 +194,8 @@ export default function AdminMenuPage() {
         return
       }
     }
-    setIsOpen(false)
+
+    setIsMenuPopupOpen(false)
     setEditingItem(null)
     setName('')
     setDescription('')
@@ -189,6 +204,33 @@ export default function AdminMenuPage() {
     setImage(null)
     fetchMenu()
   }
+
+  // --- Попап категории ---
+  const openCategoryPopup = () => {
+    setNewCategoryName('')
+    setIsCategoryPopupOpen(true)
+  }
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      alert('Введите название категории')
+      return
+    }
+
+    const { error } = await supabase
+      .from('categories')
+      .insert({ name: newCategoryName.trim() })
+
+    if (error) {
+      console.error(error)
+      alert(error.message)
+      return
+    }
+
+    fetchCategories()
+    setIsCategoryPopupOpen(false)
+  }
+
   const filteredMenu = menu.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = categoryFilter ? item.category_id === categoryFilter : true
@@ -203,9 +245,14 @@ export default function AdminMenuPage() {
       <Wrapper>
         <TitleBlock>
           <Title>Редактирование меню</Title>
-          <LoginButton style={{width:'250px'}} onClick={openCreatePopup}>
-            Создать новую позицию
-          </LoginButton>
+          <div style={{display:'flex', gap:'20px'}}>
+            <LoginButton style={{width:'250px'}} onClick={openCreateMenuPopup}>
+              Создать новую позицию
+            </LoginButton>
+            <LoginButton style={{width:'250px'}} onClick={openCategoryPopup}>
+              Создать новую категорию
+            </LoginButton>
+          </div>
         </TitleBlock>
 
         <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', flexWrap: 'wrap' }}>
@@ -222,9 +269,7 @@ export default function AdminMenuPage() {
           >
             <option value="">Все категории</option>
             {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
             ))}
           </PopupSelect>
         </div>
@@ -232,82 +277,61 @@ export default function AdminMenuPage() {
         <MenuList>
           {filteredMenu.map(item => (
             <MenuItem key={item.id}>
-              <MenuItemImg
-                src={item.image_url || '/TestRecImg.svg'}
-                alt={item.name}
-              />
+              <MenuItemImg src={item.image_url || '/TestRecImg.svg'} alt={item.name} />
               <MenuItemDesc>
                 <Subtitle>{item.name}</Subtitle>
                 <Description>{item.description}</Description>
                 <Price>{item.price} ₽</Price>
               </MenuItemDesc>
               <MenuItemButtons>
-                <LoginButton onClick={() => openEditPopup(item)}>
-                  Редактировать
-                </LoginButton>
-                <LoginButton
-                  style={{ backgroundColor: 'red' }}
-                  onClick={() => handleDelete(item.id)}
-                >
-                  Удалить
-                </LoginButton>
+                <LoginButton onClick={() => openEditMenuPopup(item)}>Редактировать</LoginButton>
+                <LoginButton style={{ backgroundColor: 'red' }} onClick={() => handleDelete(item.id)}>Удалить</LoginButton>
               </MenuItemButtons>
             </MenuItem>
           ))}
         </MenuList>
       </Wrapper>
       <Footer />
-      {isOpen && (
+
+      {/* Попап меню */}
+      {isMenuPopupOpen && (
         <PopupOverlay>
           <PopupContainer>
-            <PopupTitle>
-              {editingItem ? 'Редактировать позицию' : 'Новая позиция'}
-            </PopupTitle>
+            <PopupTitle>{editingItem ? 'Редактировать позицию' : 'Новая позиция'}</PopupTitle>
             <PopupForm>
-              <PopupFileInput
-                type="file"
-                accept="image/*"
-                onChange={e => setImage(e.target.files?.[0] || null)}
-              />
-              <PopupInput
-                placeholder="Название"
-                value={name}
-                onChange={e => setName(e.target.value)}
-              />
-              <PopupTextarea
-                placeholder="Описание"
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-              />
-              <PopupInput
-                type="number"
-                placeholder="Цена"
-                value={price}
-                onChange={e => setPrice(e.target.value)}
-              />
-              <PopupSelect
-                value={categoryId}
-                onChange={e => setCategoryId(e.target.value)}
-              >
+              <PopupFileInput type="file" accept="image/*" onChange={e => setImage(e.target.files?.[0] || null)} />
+              <PopupInput placeholder="Название" value={name} onChange={e => setName(e.target.value)} />
+              <PopupTextarea placeholder="Описание" value={description} onChange={e => setDescription(e.target.value)} />
+              <PopupInput type="number" placeholder="Цена" value={price} onChange={e => setPrice(e.target.value)} />
+              <PopupSelect value={categoryId} onChange={e => setCategoryId(e.target.value)}>
                 <option value="">Категория</option>
                 {categories.map(cat => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
               </PopupSelect>
               <PopupButtons>
-                <PopupCancelButton
-                  onClick={() => {
-                    setIsOpen(false)
-                    setEditingItem(null)
-                  }}
-                >
-                  Отмена
-                </PopupCancelButton>
-                <PopupSaveButton type="button" onClick={handleSave}>
-                  Сохранить
-                </PopupSaveButton>
+                <PopupCancelButton onClick={() => setIsMenuPopupOpen(false)}>Отмена</PopupCancelButton>
+                <PopupSaveButton type="button" onClick={handleSaveMenu}>Сохранить</PopupSaveButton>
+              </PopupButtons>
+            </PopupForm>
+          </PopupContainer>
+        </PopupOverlay>
+      )}
+
+      {/* Попап категории */}
+      {isCategoryPopupOpen && (
+        <PopupOverlay>
+          <PopupContainer>
+            <PopupTitle>Создать новую категорию</PopupTitle>
+            <PopupForm>
+              <PopupInput
+                placeholder="Название категории"
+                value={newCategoryName}
+                onChange={e => setNewCategoryName(e.target.value)}
+              />
+              <PopupButtons>
+                <PopupCancelButton onClick={() => setIsCategoryPopupOpen(false)}>Отмена</PopupCancelButton>
+                <PopupSaveButton type="button" onClick={handleCreateCategory}>Создать</PopupSaveButton>
               </PopupButtons>
             </PopupForm>
           </PopupContainer>
