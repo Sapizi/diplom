@@ -16,7 +16,6 @@ import { supabase } from '../../../../lib/supabase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-
 interface UserProfile {
   id: string;
   name: string;
@@ -32,7 +31,6 @@ export default function Header() {
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        
         if (session) {
           await loadUserProfile(session);
         } else {
@@ -47,36 +45,35 @@ export default function Header() {
     };
 
     const loadUserProfile = async (session: any) => {
-  try {
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('name, "isAdmin"')
-      .eq('id', session.user.id)
-      .single();
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('name, "isAdmin"')
+          .eq('id', session.user.id)
+          .single();
 
-    if (error) {
-      console.error('Profile fetch error:', error);
-      setUser({
-        id: session.user.id,
-        name: session.user.email.split('@')[0] || 'Пользователь',
-        isAdmin: false,
-      });
-    } else {
-      setUser({
-        id: session.user.id,
-        name: profile.name || session.user.email.split('@')[0] || 'Пользователь',
-        isAdmin: Boolean(profile.isAdmin),
-      });
-    }
-  } catch (err) {
-    console.error('Profile error:', err);
-    setUser({
-      id: session.user.id,
-      name: session.user.email.split('@')[0] || 'Пользователь',
-      isAdmin: false,
-    });
-  }
-};
+        if (error || !profile) {
+          setUser({
+            id: session.user.id,
+            name: session.user.email.split('@')[0] || 'Пользователь',
+            isAdmin: false,
+          });
+        } else {
+          setUser({
+            id: session.user.id,
+            name: profile.name || session.user.email.split('@')[0] || 'Пользователь',
+            isAdmin: Boolean(profile.isAdmin),
+          });
+        }
+      } catch (err) {
+        console.error('Profile error:', err);
+        setUser({
+          id: session.user.id,
+          name: session.user.email.split('@')[0] || 'Пользователь',
+          isAdmin: false,
+        });
+      }
+    };
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -154,32 +151,33 @@ export default function Header() {
 
           <UserButtons>
             {user ? (
-  <>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-      <Link 
-        href={user.isAdmin ? "/pages/admin/main" : "/pages/user/account"}
-        style={{
-          color: '#333',
-          textDecoration: 'none',
-          fontWeight: '500',
-          fontSize: '16px',
-        }}
-      >
-        {user.isAdmin ? "Админка" : user.name}
-      </Link>
-    </div>
-    <Link href="/cart">
-      <img src="/cart.svg" alt="Cart" />
-    </Link>
-  </>
-) : (
-  <>
-    <UserButtonLink href="/pages/login">Войти</UserButtonLink>
-    <UserButtonLink href="/cart">
-      <img src="/cart.svg" alt="Cart" />
-    </UserButtonLink>
-  </>
-)}
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  {/* Если юзер админ — ссылка на админку, иначе на его аккаунт */}
+                  <Link 
+                    href={user.isAdmin ? "/pages/admin/main" : "/pages/user/account"}
+                    style={{
+                      color: '#333',
+                      textDecoration: 'none',
+                      fontWeight: '500',
+                      fontSize: '16px',
+                    }}
+                  >
+                    {user.isAdmin ? "Админка" : user.name}
+                  </Link>
+                </div>
+                <Link href="/cart">
+                  <img src="/cart.svg" alt="Cart" />
+                </Link>
+              </>
+            ) : (
+              <>
+                <UserButtonLink href="/pages/login">Войти</UserButtonLink>
+                <UserButtonLink href="/cart">
+                  <img src="/cart.svg" alt="Cart" />
+                </UserButtonLink>
+              </>
+            )}
           </UserButtons>
         </HeaderContent>
       </Wrapper>
