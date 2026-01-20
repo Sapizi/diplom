@@ -165,6 +165,7 @@ export default function Header() {
                   >
                     {user.isAdmin ? "Админка" : user.name}
                   </Link>
+                  
                 </div>
                 <Link href="/cart">
                   <img src="/cart.svg" alt="Cart" />

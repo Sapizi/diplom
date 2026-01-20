@@ -103,12 +103,12 @@ interface UserProfile {
               <BonusText>Ваши баллы: {profile.bonus_points}</BonusText>
             </Bonus>
 
-            <UserGreyBlock>
+            <UserGreyBlock href={'/pages/user/orders'}>
               <GreyBlockText>Заказы</GreyBlockText>
               <GreyBlockP>{orderCount}</GreyBlockP>
             </UserGreyBlock>
 
-            <UserGreyBlock>
+            <UserGreyBlock href={'/pages/user/adresses'}>
               <GreyBlockText>Адреса</GreyBlockText>
               <GreyBlockP>{addressCount}</GreyBlockP>
             </UserGreyBlock>

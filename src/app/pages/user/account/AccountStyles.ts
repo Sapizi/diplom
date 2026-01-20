@@ -1,3 +1,4 @@
+import Link from "next/link";
 import styled from "styled-components";
 export const ImageContainer = styled.div`
     width: 280px;
@@ -55,7 +56,7 @@ export const BonusBalance = styled.p`
     font-size: 128px;
     font-weight: 750;
 `
-export const UserGreyBlock = styled.div`
+export const UserGreyBlock = styled(Link)`
     padding: 23px;
     width: 339px;
     height: 268px;
