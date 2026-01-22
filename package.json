@@ -18,7 +18,9 @@
     "pg": "^8.16.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "styled-components": "^6.1.19"
+    "styled-components": "^6.1.19",
+    "uuid": "^13.0.0",
+    "yookassa": "^0.1.1"
   },
   "devDependencies": {
     "@types/node": "^20",

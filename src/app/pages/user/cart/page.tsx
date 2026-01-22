@@ -77,6 +77,25 @@ export default function Cart() {
   }, [useBonuses, userBonuses, totalPrice])
 
   const finalPrice = totalPrice - bonusesToSpend
+  const handlePayment = async () => {
+  if (finalPrice <= 0) return
+
+  const res = await fetch('/api/yookassa/create-payment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      amount: finalPrice
+    })
+  })
+
+  const data = await res.json()
+
+  if (data.confirmationUrl) {
+    window.location.href = data.confirmationUrl
+  } else {
+    alert('Ошибка оплаты')
+  }
+}
 
   return (
     <>
@@ -146,9 +165,13 @@ export default function Cart() {
               <span>{finalPrice} ₽</span>
             </BonusRow>
 
-            <LoginButton style={{ width: '100%', marginTop: 20 }}>
-              Оплатить
-            </LoginButton>
+            <LoginButton
+  style={{ width: '100%', marginTop: 20 }}
+  onClick={handlePayment}
+>
+  Оплатить
+</LoginButton>
+
           </CartSummary>
         </CartContainer>
       </Wrapper>
