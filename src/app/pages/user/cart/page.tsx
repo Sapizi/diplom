@@ -140,7 +140,7 @@ export default function Cart() {
                 <span>{bonusesToSpend} ₽</span>
               </BonusToggle>
             </BonusRow>
-
+{/*  */}
             <BonusRow style={{ fontWeight: 600 }}>
               <span>Итого</span>
               <span>{finalPrice} ₽</span>
