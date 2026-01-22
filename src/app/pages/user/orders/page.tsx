@@ -129,7 +129,7 @@ export default function UserOrdersPage() {
                   order.items.map((item) => (
                     <div key={item.id} style={{ paddingLeft: 15 }}>
                       <Description>
-                        • {item.menu_items?.name ?? 'Товар'} —{' '}
+                        • {item.menu_items?.name ?? 'Товар'} -{' '}
                         {item.menu_items?.price ?? 0} ₽
                       </Description>
                     </div>

@@ -121,7 +121,7 @@ export default function Header() {
               <Logo src="/logo.svg" alt="Logotype" />
             </LogoContainer>
             <UserButtons>
-              <Link href="/cart">
+              <Link href="/pages/user/cart">
                 <img src="/cart.svg" alt="Cart" />
               </Link>
             </UserButtons>
@@ -142,7 +142,7 @@ export default function Header() {
             <SocialLink href="https://vk.com/" target="_blank" rel="noopener noreferrer">
               <img src="/vk_icon.svg" alt="VK contact" />
             </SocialLink>
-            <SocialLink href="#">+7-999-99-99</SocialLink>
+            <SocialLink href="#">+7-900-084-86-83</SocialLink>
           </SocialLinks>
 
           <LogoContainer>
@@ -153,7 +153,6 @@ export default function Header() {
             {user ? (
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  {/* Если юзер админ — ссылка на админку, иначе на его аккаунт */}
                   <Link 
                     href={user.isAdmin ? "/pages/admin/main" : "/pages/user/account"}
                     style={{
@@ -167,7 +166,7 @@ export default function Header() {
                   </Link>
                   
                 </div>
-                <Link href="/cart">
+                <Link href="/pages/user/cart">
                   <img src="/cart.svg" alt="Cart" />
                 </Link>
               </>

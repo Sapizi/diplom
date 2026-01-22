@@ -21,7 +21,7 @@ export const SocialLinks = styled.div`
     gap: 42px;
 `
 export const SocialLink = styled(Link)`
-    font-size: 20px;
+    font-size: 18px;
     font-weight: bold;
     text-decoration: none;
     color: black;
