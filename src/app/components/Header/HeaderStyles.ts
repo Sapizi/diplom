@@ -1,7 +1,7 @@
 import styled from "styled-components";
 import Link from "next/link";
 export const Wrapper = styled.div`
-    width: calc(100vw - 30%);
+    width: 1480px;
     margin: 0 auto;
     box-sizing: border-box;
 `
