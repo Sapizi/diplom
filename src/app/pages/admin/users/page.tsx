@@ -1,7 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '../../../../../lib/supabase'
+import {
+  deleteProfileById,
+  fetchAdminUsers,
+  getAvatarPublicUrl,
+  updateProfileById,
+  uploadAvatar,
+} from '@/app/api/client/profiles'
+import { fetchOrderItems, fetchOrdersByUser } from '@/app/api/client/orders'
 import Footer from '@/app/components/Footer/Footer'
 import Header from '@/app/components/Header/Header'
 import { Wrapper } from '@/app/components/Header/HeaderStyles'
@@ -39,6 +46,8 @@ type UserType = {
 
 type OrderItemType = {
   id: string
+  quantity?: number
+  price_at_time?: number | null
   menu_items: {
     id: string
     name: string
@@ -79,10 +88,7 @@ export default function UsersList() {
   const fetchUsers = async () => {
     setLoading(true)
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, name, email, avatar_url, bonus_points, created_at')
-      .order('created_at', { ascending: true })
+    const { data, error } = await fetchAdminUsers()
 
     if (error) {
       console.error(error)
@@ -123,31 +129,24 @@ export default function UsersList() {
     if (avatar) {
       const fileName = `${Date.now()}-${avatar.name}`
 
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, avatar)
+      const { error: uploadError } = await uploadAvatar(fileName, avatar)
 
       if (uploadError) {
         alert('Ошибка загрузки аватара')
         return
       }
 
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName)
+      const { data } = getAvatarPublicUrl(fileName)
 
       avatarUrl = data.publicUrl
     }
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        name,
-        email,
-        bonus_points: Number(bonusPoints),
-        avatar_url: avatarUrl
-      })
-      .eq('id', editingUser.id)
+    const { error } = await updateProfileById(editingUser.id, {
+      name,
+      email,
+      bonus_points: Number(bonusPoints),
+      avatar_url: avatarUrl
+    })
 
     if (error) {
       console.error(error)
@@ -165,10 +164,7 @@ export default function UsersList() {
   const handleDelete = async (id: string) => {
     if (!confirm('Удалить пользователя?')) return
 
-    const { error } = await supabase
-      .from('profiles')
-      .delete()
-      .eq('id', id)
+    const { error } = await deleteProfileById(id)
 
     if (error) {
       alert(error.message)
@@ -183,11 +179,7 @@ export default function UsersList() {
   const openOrdersPopup = async (userId: string) => {
     setOrdersLoading(true)
 
-    const { data: ordersData, error } = await supabase
-      .from('orders')
-      .select('id, created_at')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
+    const { data: ordersData, error } = await fetchOrdersByUser(userId)
 
     if (error) {
       alert('Ошибка загрузки заказов')
@@ -197,17 +189,7 @@ export default function UsersList() {
 
     const ordersWithItems: OrderType[] = await Promise.all(
   (ordersData || []).map(async (order) => {
-    const { data: itemsData } = await supabase
-      .from('order_items')
-      .select(`
-        id,
-        menu_items (
-          id,
-          name,
-          price
-        )
-      `)
-      .eq('order_id', order.id)
+    const { data: itemsData } = await fetchOrderItems(order.id)
 
     return {
       ...order,
@@ -328,8 +310,8 @@ export default function UsersList() {
                   ) : (
                     order.items.map(item => (
                       <Description key={item.id} style={{ paddingLeft: 10 }}>
-                        • {item.menu_items?.name ?? 'Товар'} —{' '}
-                        {item.menu_items?.price ?? 0} ₽
+                        • {item.menu_items?.name ?? 'Товар'} x{item.quantity ?? 1} —{' '}
+                        {item.price_at_time ?? item.menu_items?.price ?? 0} ₽
                       </Description>
                     ))
                   )}

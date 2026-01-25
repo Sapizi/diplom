@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '../../../../lib/supabase'
+import { fetchMenuItems } from '@/app/api/client/menu'
 import Header from '@/app/components/Header/Header'
 import Footer from '@/app/components/Footer/Footer'
 import { Wrapper } from '@/app/components/Header/HeaderStyles'
@@ -44,11 +44,7 @@ export default function MenuPage() {
   const fetchMenu = async () => {
     setLoading(true)
 
-    let query = supabase.from('menu_items').select('*')
-    if (sort === 'asc') query = query.order('price', { ascending: true })
-    if (sort === 'desc') query = query.order('price', { ascending: false })
-
-    const { data, error } = await query
+    const { data, error } = await fetchMenuItems(sort)
     if (error) {
       console.error(error)
       setLoading(false)

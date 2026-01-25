@@ -3,7 +3,7 @@ import Header from "@/app/components/Header/Header";
 import Footer from "@/app/components/Footer/Footer";
 import {CheckboxContainer,CheckBoxLink,CheckBoxText,LoginButton,LoginCheckbox,LoginContainer,LoginForm,LoginFormInput,LoginFormLabel,LoginFormTitle,LoginInputContainer} from "../registration/RegistrationStyles";
 import { useState } from 'react';
-import { supabase } from '../../../../lib/supabase';
+import { signInWithPassword } from '@/app/api/client/auth';
 import { useRouter } from 'next/navigation';
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -17,10 +17,7 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { data, error: authError } = await signInWithPassword(email, password);
       if (authError) {
         setError(authError.message);
         return;

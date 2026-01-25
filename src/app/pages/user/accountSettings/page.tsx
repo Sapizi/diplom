@@ -7,7 +7,8 @@ import { Title } from "@/app/MainPageStyles"
 import { ChangeForm } from "./AccountSettingsStyles"
 import { LoginButton, LoginFormInput, LoginFormLabel } from "../../registration/RegistrationStyles"
 import { useEffect, useState } from "react"
-import { supabase } from "../../../../../lib/supabase"
+import { getCurrentUser } from "@/app/api/client/auth"
+import { fetchProfileSettings, getAvatarPublicUrl, updateProfileById, uploadAvatar, upsertProfileById } from "@/app/api/client/profiles"
 export default function AccountSettings() {
   const [name, setName] = useState<string>('')
   const [phone, setPhone] = useState<string>('')
@@ -17,17 +18,13 @@ export default function AccountSettings() {
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
     const fetchProfile = async () => {
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      if (authError || !user) {
+      const user = await getCurrentUser()
+      if (!user) {
         setError("Не удалось получить пользователя")
         setLoading(false)
         return
       }
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('name, phone, avatar_url')
-        .eq('id', user.id)
-        .single()
+      const { data, error } = await fetchProfileSettings(user.id)
       if (error && error.code !== 'PGRST116') {
         setError("Ошибка загрузки профиля")
       } else {
@@ -40,17 +37,12 @@ export default function AccountSettings() {
     fetchProfile()
   }, [])
   const handleUpdate = async (field: string, value: string) => {
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    const user = await getCurrentUser()
+    if (!user) {
       setError("Пользователь не авторизован")
       return
     }
-    const { error } = await supabase
-      .from('profiles')
-      .upsert({
-        id: user.id,
-        [field]: value,
-      })
+    const { error } = await upsertProfileById(user.id, { [field]: value })
     if (error) {
       setError(`Ошибка обновления: ${error.message}`)
     } else {
@@ -58,11 +50,11 @@ export default function AccountSettings() {
       alert("Данные успешно обновлены!")
     }
   }
-  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     setUploading(true)
     setError(null)
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    const user = await getCurrentUser()
+    if (!user) {
       setError("Пользователь не авторизован")
       setUploading(false)
       return
@@ -80,23 +72,14 @@ export default function AccountSettings() {
     const fileExt = file.name.split('.').pop()
     const cleanFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`
     const fileName = `${user.id}/${cleanFileName}`
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(fileName, file, { upsert: true })
+    const { error: uploadError } = await uploadAvatar(fileName, file)
     if (uploadError) {
       setError(`Ошибка загрузки: ${uploadError.message}`)
       setUploading(false)
       return
     }
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(fileName)
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .upsert({
-        id: user.id,
-        avatar_url: publicUrl,
-      })
+    const { data: { publicUrl } } = getAvatarPublicUrl(fileName)
+    const { error: updateError } = await updateProfileById(user.id, { avatar_url: publicUrl })
     if (updateError) {
       setError(`Ошибка сохранения аватара: ${updateError.message}`)
     } else {
@@ -152,7 +135,7 @@ export default function AccountSettings() {
             <input
               type="file"
               accept="image/*"
-              onChange={uploadAvatar}
+              onChange={handleAvatarUpload}
               disabled={uploading}
               style={{ marginBottom: '8px' }}
             />

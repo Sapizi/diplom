@@ -4,7 +4,10 @@ import Header from "@/app/components/Header/Header";
 import { Wrapper } from "@/app/components/Header/HeaderStyles";
 import { Avatar, ChangeLink, ImageContainer, Name, Container, Bonus, UserActivity, BonusText, UserGreyBlock, GreyBlockText, GreyBlockP } from "./AccountStyles";
 import { useEffect, useState } from "react";
-import { supabase } from "../../../../../lib/supabase";
+import { getCurrentUser, signOut } from "@/app/api/client/auth";
+import { fetchProfileSummary } from "@/app/api/client/profiles";
+import { fetchOrdersCountByUser } from "@/app/api/client/orders";
+import { fetchAddressesCountByUser } from "@/app/api/client/addresses";
 import { useRouter } from 'next/navigation';
 
 export default function AccountPage() {
@@ -13,25 +16,16 @@ export default function AccountPage() {
     avatar_url: string | null;
     bonus_points: number;
   } | null>(null);
-interface UserProfile {
-  id: string;
-  name: string;
-}
   const [orderCount, setOrderCount] = useState(0);
   const [addressCount, setAddressCount] = useState(0);
-  const [user, setUser] = useState<UserProfile | null>(null);
   useEffect(() => {
     const fetchUserData = async () => {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
+      const user = await getCurrentUser();
+      if (!user) {
         console.error("Пользователь не авторизован");
         return;
       }
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('name, avatar_url, bonus_points')
-        .eq('id', user.id)
-        .single();
+      const { data: profileData, error: profileError } = await fetchProfileSummary(user.id);
 
       if (profileError) {
         console.error("Ошибка загрузки профиля:", profileError);
@@ -39,18 +33,12 @@ interface UserProfile {
       }
 
       setProfile(profileData);
-      const { count: ordersCount, error: ordersError } = await supabase
-        .from('orders')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+      const { count: ordersCount, error: ordersError } = await fetchOrdersCountByUser(user.id);
 
       if (!ordersError) {
         setOrderCount(ordersCount || 0);
       }
-      const { count: addressesCount, error: addressesError } = await supabase
-        .from('addresses')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+      const { count: addressesCount, error: addressesError } = await fetchAddressesCountByUser(user.id);
 
       if (!addressesError) {
         setAddressCount(addressesCount || 0);
@@ -66,8 +54,7 @@ interface UserProfile {
   const router = useRouter();
   const handleLogout = async () => {
       try {
-        await supabase.auth.signOut();
-        setUser(null);
+        await signOut();
         router.push('/');
         router.refresh();
       } catch (error) {

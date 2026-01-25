@@ -11,91 +11,17 @@ import {
   UserButtons,
   Wrapper,
 } from '@/app/components/Header/HeaderStyles';
-import { useEffect, useState } from 'react';
-import { supabase } from '../../../../lib/supabase';
+import { useHeaderAuth } from './useHeaderAuth';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-interface UserProfile {
-  id: string;
-  name: string;
-  isAdmin: boolean;
-}
-
 export default function Header() {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-
-  useEffect(() => {
-    const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          await loadUserProfile(session);
-        } else {
-          setUser(null);
-        }
-      } catch (error) {
-        console.error('Authentication error:', error);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const loadUserProfile = async (session: any) => {
-      try {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('name, "isAdmin"')
-          .eq('id', session.user.id)
-          .single();
-
-        if (error || !profile) {
-          setUser({
-            id: session.user.id,
-            name: session.user.email.split('@')[0] || 'Пользователь',
-            isAdmin: false,
-          });
-        } else {
-          setUser({
-            id: session.user.id,
-            name: profile.name || session.user.email.split('@')[0] || 'Пользователь',
-            isAdmin: Boolean(profile.isAdmin),
-          });
-        }
-      } catch (err) {
-        console.error('Profile error:', err);
-        setUser({
-          id: session.user.id,
-          name: session.user.email.split('@')[0] || 'Пользователь',
-          isAdmin: false,
-        });
-      }
-    };
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session) {
-          await loadUserProfile(session);
-        } else {
-          setUser(null);
-        }
-      }
-    );
-
-    initializeAuth();
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
+  const { user, isLoading, logout } = useHeaderAuth();
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
-      setUser(null);
+      await logout();
       router.push('/');
       router.refresh();
     } catch (error) {
@@ -115,12 +41,13 @@ export default function Header() {
               <SocialLink href="https://vk.com/">
                 <img src="/vk_icon.svg" alt="VK contact" />
               </SocialLink>
-              <SocialLink href="#">+7-999-99-99</SocialLink>
+              <SocialLink href="#">+7-900-084-86-83</SocialLink>
             </SocialLinks>
             <LogoContainer>
               <Logo src="/logo.svg" alt="Logotype" />
             </LogoContainer>
             <UserButtons>
+              <UserButtonLink href="/pages/user/account">Аккаунт</UserButtonLink>
               <Link href="/pages/user/cart">
                 <img src="/cart.svg" alt="Cart" />
               </Link>

@@ -40,6 +40,6 @@ export const UserButtons = styled.div`
 `
 export const UserButtonLink = styled(Link)`
     color: black;
-    font-weight: bold;
-    font-size: 20px;
+    font-weight: 500;
+    font-size: 12px;
 `

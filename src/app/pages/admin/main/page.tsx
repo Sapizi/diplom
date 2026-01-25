@@ -10,7 +10,10 @@ import { Title } from "@/app/MainPageStyles";
 import { AdminBlock, AdminContainer } from "./AdminStyles";
 import { GreyBlockText } from "../../user/account/AccountStyles";
 
-import { supabase } from "../../../../../lib/supabase";
+import { getSession, signOut } from "@/app/api/client/auth";
+import { getIsAdmin } from "@/app/api/client/profiles";
+import { fetchDashboardCounts } from "@/app/api/client/dashboard";
+import { subscribeAdminDashboard } from "@/app/api/client/realtime";
 
 export default function AdminMain() {
   const router = useRouter();
@@ -24,7 +27,7 @@ export default function AdminMain() {
   // Проверка сессии и прав пользователя
   useEffect(() => {
     const checkAdmin = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const { data: { session }, error } = await getSession();
 
       if (error || !session) {
         router.push('/pages/login'); // если нет сессии — на логин
@@ -32,11 +35,7 @@ export default function AdminMain() {
       }
 
       // Получаем профиль пользователя
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('isAdmin')
-        .eq('id', session.user.id)
-        .single();
+      const { data: profile, error: profileError } = await getIsAdmin(session.user.id);
 
       if (profileError || !profile?.isAdmin) {
         router.push('/'); // если не админ — на главную
@@ -52,21 +51,10 @@ export default function AdminMain() {
 
   // Функция для получения количества записей
   const fetchCounts = async () => {
-    const { count: users } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true });
-
-    const { count: menu } = await supabase
-      .from('menu_items')
-      .select('*', { count: 'exact', head: true });
-
-    const { count: orders } = await supabase
-      .from('orders')
-      .select('*', { count: 'exact', head: true });
-
-    setUsersCount(users ?? 0);
-    setMenuCount(menu ?? 0);
-    setOrdersCount(orders ?? 0);
+    const counts = await fetchDashboardCounts();
+    setUsersCount(counts.users);
+    setMenuCount(counts.menu);
+    setOrdersCount(counts.orders);
   };
 
   useEffect(() => {
@@ -74,25 +62,20 @@ export default function AdminMain() {
 
     fetchCounts();
 
-    const channel = supabase
-      .channel('admin-dashboard')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, fetchCounts)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items' }, fetchCounts)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchCounts)
-      .subscribe();
+    const unsubscribe = subscribeAdminDashboard(fetchCounts);
 
     return () => {
-      supabase.removeChannel(channel);
+      unsubscribe();
     };
   }, [userIsAdmin]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     router.push('/');
     router.refresh();
   };
 
-  if (isLoading) return <div>Загрузка...</div>; // или какой-то спиннер
+  if (isLoading) return <div>Загрузка...</div>;
 
   return (
     <>

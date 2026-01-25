@@ -1,6 +1,14 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { supabase } from '../../../../../lib/supabase'
+import {
+  createMenuItem,
+  deleteMenuItem,
+  fetchAdminMenuItems,
+  getMenuImagePublicUrl,
+  updateMenuItem,
+  uploadMenuImage,
+} from '@/app/api/client/menu'
+import { createCategory, fetchCategories as fetchCategoriesApi } from '@/app/api/client/categories'
 import Footer from '@/app/components/Footer/Footer'
 import Header from '@/app/components/Header/Header'
 import { Wrapper } from '@/app/components/Header/HeaderStyles'
@@ -67,10 +75,7 @@ export default function AdminMenuPage() {
   // --- Загрузка меню ---
   const fetchMenu = async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('menu_items')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const { data, error } = await fetchAdminMenuItems()
 
     if (error) {
       console.error(error)
@@ -82,11 +87,8 @@ export default function AdminMenuPage() {
   }
 
   // --- Загрузка категорий ---
-  const fetchCategories = async () => {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('id, name')
-      .order('name')
+  const loadCategories = async () => {
+    const { data, error } = await fetchCategoriesApi()
 
     if (error) {
       console.error(error)
@@ -97,17 +99,14 @@ export default function AdminMenuPage() {
 
   useEffect(() => {
     fetchMenu()
-    fetchCategories()
+    loadCategories()
   }, [])
 
   // --- Удаление позиции ---
   const handleDelete = async (id: string) => {
     const confirmDelete = confirm('Удалить эту позицию?')
     if (!confirmDelete) return
-    const { error } = await supabase
-      .from('menu_items')
-      .delete()
-      .eq('id', id)
+    const { error } = await deleteMenuItem(id)
     if (error) {
       console.error(error)
       alert(error.message)
@@ -147,31 +146,24 @@ export default function AdminMenuPage() {
 
     if (image) {
       const fileName = `${Date.now()}-${image.name}`
-      const { error: uploadError } = await supabase.storage
-        .from('menu-images')
-        .upload(fileName, image)
+      const { error: uploadError } = await uploadMenuImage(fileName, image)
       if (uploadError) {
         console.error(uploadError)
         alert('Ошибка загрузки картинки')
         return
       }
-      const { data } = supabase.storage
-        .from('menu-images')
-        .getPublicUrl(fileName)
+      const { data } = getMenuImagePublicUrl(fileName)
       imageUrl = data.publicUrl
     }
 
     if (editingItem) {
-      const { error } = await supabase
-        .from('menu_items')
-        .update({
-          name,
-          description,
-          price: Number(price),
-          category_id: categoryId,
-          image_url: imageUrl
-        })
-        .eq('id', editingItem.id)
+      const { error } = await updateMenuItem(editingItem.id, {
+        name,
+        description,
+        price: Number(price),
+        category_id: categoryId,
+        image_url: imageUrl
+      })
 
       if (error) {
         console.error(error)
@@ -179,15 +171,13 @@ export default function AdminMenuPage() {
         return
       }
     } else {
-      const { error } = await supabase
-        .from('menu_items')
-        .insert({
-          name,
-          description,
-          price: Number(price),
-          category_id: categoryId,
-          image_url: imageUrl
-        })
+      const { error } = await createMenuItem({
+        name,
+        description,
+        price: Number(price),
+        category_id: categoryId,
+        image_url: imageUrl
+      })
       if (error) {
         console.error(error)
         alert(error.message)
@@ -217,9 +207,7 @@ export default function AdminMenuPage() {
       return
     }
 
-    const { error } = await supabase
-      .from('categories')
-      .insert({ name: newCategoryName.trim() })
+    const { error } = await createCategory(newCategoryName.trim())
 
     if (error) {
       console.error(error)
@@ -227,7 +215,7 @@ export default function AdminMenuPage() {
       return
     }
 
-    fetchCategories()
+    loadCategories()
     setIsCategoryPopupOpen(false)
   }
 

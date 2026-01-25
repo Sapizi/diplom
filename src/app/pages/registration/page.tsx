@@ -4,7 +4,7 @@ import Header from '@/app/components/Header/Header';
 import Footer from '@/app/components/Footer/Footer';
 import {CheckboxContainer,CheckBoxLink,CheckBoxText,LoginButton,LoginContainer,LoginForm,LoginFormInput,LoginFormLabel,LoginFormTitle,LoginInputContainer,} from '@/app/pages/registration/RegistrationStyles';
 import { useState } from 'react';
-import { supabase } from '../../../../lib/supabase';
+import { signUpWithEmail } from '@/app/api/client/auth';
 export default function RegistrationPage() {
   const [formData, setFormData] = useState({
     name: '',
@@ -40,15 +40,9 @@ export default function RegistrationPage() {
     }
 
     try {
-      const { data, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { 
-            name: name.trim(),
-            phone: phone.replace(/\D/g, ''), 
-          },
-        },
+      const { data, error: authError } = await signUpWithEmail(email, password, {
+        name: name.trim(),
+        phone: phone.replace(/\D/g, ''),
       });
 
       if (authError) {

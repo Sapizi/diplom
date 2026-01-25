@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '../../../../../lib/supabase'
+import { getCurrentUser } from '@/app/api/client/auth'
+import { fetchOrderItems, fetchOrdersByUser } from '@/app/api/client/orders'
 
 import Header from '@/app/components/Header/Header'
 import Footer from '@/app/components/Footer/Footer'
@@ -22,6 +23,8 @@ import { LoginButton } from '../../registration/RegistrationStyles'
 
 type OrderItemType = {
   id: string
+  quantity?: number
+  price_at_time?: number | null
   menu_items: {
     id: string
     name: string
@@ -48,20 +51,14 @@ export default function UserOrdersPage() {
   const fetchOrders = async () => {
     setLoading(true)
 
-    const {
-      data: { user }
-    } = await supabase.auth.getUser()
+    const user = await getCurrentUser()
 
     if (!user) {
       setLoading(false)
       return
     }
 
-    const { data: ordersData, error } = await supabase
-      .from('orders')
-      .select('id, created_at')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+    const { data: ordersData, error } = await fetchOrdersByUser(user.id)
 
     if (error) {
       console.error(error)
@@ -71,17 +68,7 @@ export default function UserOrdersPage() {
 
     const ordersWithItems: OrderType[] = await Promise.all(
       (ordersData || []).map(async (order) => {
-        const { data: itemsData } = await supabase
-          .from('order_items')
-          .select(`
-            id,
-            menu_items (
-              id,
-              name,
-              price
-            )
-          `)
-          .eq('order_id', order.id)
+        const { data: itemsData } = await fetchOrderItems(order.id)
 
         return {
           ...order,
@@ -95,7 +82,11 @@ export default function UserOrdersPage() {
   }
 
   const calcTotal = (items: OrderItemType[]) =>
-    items.reduce((sum, item) => sum + (item.menu_items?.price ?? 0), 0)
+    items.reduce((sum, item) => {
+      const price = item.price_at_time ?? item.menu_items?.price ?? 0
+      const qty = item.quantity ?? 1
+      return sum + price * qty
+    }, 0)
 
   /* ===================== RENDER ===================== */
 
@@ -129,8 +120,8 @@ export default function UserOrdersPage() {
                   order.items.map((item) => (
                     <div key={item.id} style={{ paddingLeft: 15 }}>
                       <Description>
-                        • {item.menu_items?.name ?? 'Товар'} -{' '}
-                        {item.menu_items?.price ?? 0} ₽
+                        • {item.menu_items?.name ?? 'Товар'} x{item.quantity ?? 1} -{' '}
+                        {item.price_at_time ?? item.menu_items?.price ?? 0} ₽
                       </Description>
                     </div>
                   ))

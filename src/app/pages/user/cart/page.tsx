@@ -7,7 +7,9 @@ import { Wrapper } from '@/app/components/Header/HeaderStyles'
 import { Title } from '@/app/MainPageStyles'
 import { Subtitle, TitleBlock } from '../../admin/menu/AdminMenuStyles'
 import { LoginButton } from '../../registration/RegistrationStyles'
-import { supabase } from '../../../../../lib/supabase'
+import { getCurrentUser, getSession } from '@/app/api/client/auth'
+import { fetchUserBonusPoints } from '@/app/api/client/profiles'
+import { createYooKassaPayment } from '@/app/api/client/payments'
 import {
   CartContainer,
   CartDesc,
@@ -39,16 +41,11 @@ export default function Cart() {
     if (cartRaw) setCart(JSON.parse(cartRaw))
 
     // подгружаем бонусы текущего пользователя
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) return
-      supabase
-        .from('profiles')
-        .select('bonus_points')
-        .eq('id', data.user.id)
-        .single()
-        .then(({ data: profile }) => {
-          if (profile) setUserBonuses(profile.bonus_points ?? 0)
-        })
+    getCurrentUser().then((user) => {
+      if (!user) return
+      fetchUserBonusPoints(user.id).then(({ data: profile }) => {
+        if (profile) setUserBonuses(profile.bonus_points ?? 0)
+      })
     })
   }, [])
 
@@ -78,24 +75,42 @@ export default function Cart() {
 
   const finalPrice = totalPrice - bonusesToSpend
   const handlePayment = async () => {
-  if (finalPrice <= 0) return
+    if (finalPrice <= 0) return
 
-  const res = await fetch('/api/yookassa/create-payment', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      amount: finalPrice
-    })
-  })
+    const user = await getCurrentUser()
+    const { data: { session } } = await getSession()
 
-  const data = await res.json()
+    if (!user || !session?.access_token) {
+      alert('Нужно войти в аккаунт')
+      return
+    }
 
-  if (data.confirmationUrl) {
-    window.location.href = data.confirmationUrl
-  } else {
-    alert('Ошибка оплаты')
+    const cartPayload = cart.map(item => ({
+      id: item.id,
+      price: item.price,
+      quantity: item.quantity,
+    }))
+
+    const data = await createYooKassaPayment(
+      finalPrice,
+      cartPayload,
+      session.access_token,
+      user.id
+    )
+
+    if (data.paymentId && data.orderId) {
+      localStorage.setItem(
+        'pending_payment',
+        JSON.stringify({ paymentId: data.paymentId, orderId: data.orderId })
+      )
+    }
+
+    if (data.confirmationUrl) {
+      window.location.href = data.confirmationUrl
+    } else {
+      alert('Ошибка оплаты')
+    }
   }
-}
 
   return (
     <>

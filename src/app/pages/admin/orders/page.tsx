@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from "react"
-import { supabase } from "../../../../../lib/supabase"
+import { fetchAllOrders, fetchOrderItems } from "@/app/api/client/orders"
 import Footer from "@/app/components/Footer/Footer";
 import Header from "@/app/components/Header/Header";
 import { Wrapper } from "@/app/components/Header/HeaderStyles";
@@ -15,6 +15,8 @@ type OrderType = {
   created_at: string
   items: {
     id: string
+    quantity?: number
+    price_at_time?: number | null
     menu_items: {
       id: string
       name: string
@@ -31,10 +33,7 @@ export default function AdminOrders() {
     setLoading(true)
 
     // 1. Получаем все заказы
-    const { data: ordersData, error: ordersError } = await supabase
-      .from("orders")
-      .select("id, user_id, created_at")
-      .order("created_at", { ascending: false })
+    const { data: ordersData, error: ordersError } = await fetchAllOrders()
 
     if (ordersError) {
       console.error(ordersError)
@@ -45,10 +44,7 @@ export default function AdminOrders() {
     // 2. Для каждого заказа подтягиваем позиции с menu_items
     const ordersWithItems: OrderType[] = await Promise.all(
   (ordersData || []).map(async order => {
-    const { data: itemsData, error: itemsError } = await supabase
-      .from('order_items')
-      .select('id, menu_items(id, name, price)')
-      .eq('order_id', order.id)
+    const { data: itemsData, error: itemsError } = await fetchOrderItems(order.id)
 
     if (itemsError) {
       console.error(itemsError)
@@ -58,6 +54,8 @@ export default function AdminOrders() {
     // Приводим типы вручную
     const formattedItems = (itemsData || []).map((item: any) => ({
       id: String(item.id),
+      quantity: Number(item.quantity ?? 1),
+      price_at_time: item.price_at_time != null ? Number(item.price_at_time) : null,
       menu_items: {
         id: String(item.menu_items.id),
         name: String(item.menu_items.name),
@@ -107,7 +105,7 @@ export default function AdminOrders() {
               ) : (
                 order.items.map(item => (
                   <div key={item.id} style={{ paddingLeft: '15px' }}>
-                    <Description>• {item.menu_items.name} — {item.menu_items.price} ₽</Description>
+                    <Description>• {item.menu_items.name} x{item.quantity ?? 1} — {item.price_at_time ?? item.menu_items.price} ₽</Description>
                   </div>
                 ))
               )}
