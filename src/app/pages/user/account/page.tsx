@@ -11,6 +11,7 @@ import { fetchAddressesCountByUser } from "@/app/api/client/addresses";
 import { useRouter } from 'next/navigation';
 
 export default function AccountPage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<{
     name: string;
     avatar_url: string | null;
@@ -18,28 +19,33 @@ export default function AccountPage() {
   } | null>(null);
   const [orderCount, setOrderCount] = useState(0);
   const [addressCount, setAddressCount] = useState(0);
+
   useEffect(() => {
     const fetchUserData = async () => {
       const user = await getCurrentUser();
       if (!user) {
-        console.error("Пользователь не авторизован");
+        console.error("������������ �� �����������");
         return;
       }
-      const { data: profileData, error: profileError } = await fetchProfileSummary(user.id);
+      const [
+        { data: profileData, error: profileError },
+        { count: ordersCount, error: ordersError },
+        { count: addressesCount, error: addressesError }
+      ] = await Promise.all([
+        fetchProfileSummary(user.id),
+        fetchOrdersCountByUser(user.id),
+        fetchAddressesCountByUser(user.id)
+      ]);
 
       if (profileError) {
-        console.error("Ошибка загрузки профиля:", profileError);
+        console.error("Profile load error:", profileError);
         return;
       }
 
       setProfile(profileData);
-      const { count: ordersCount, error: ordersError } = await fetchOrdersCountByUser(user.id);
-
       if (!ordersError) {
         setOrderCount(ordersCount || 0);
       }
-      const { count: addressesCount, error: addressesError } = await fetchAddressesCountByUser(user.id);
-
       if (!addressesError) {
         setAddressCount(addressesCount || 0);
       }
@@ -49,45 +55,46 @@ export default function AccountPage() {
   }, []);
 
   if (!profile) {
-    return <div>Загрузка...</div>;
+    return <div>Загрузка</div>;
   }
-  const router = useRouter();
+
   const handleLogout = async () => {
-      try {
-        await signOut();
-        router.push('/');
-        router.refresh();
-      } catch (error) {
-        console.error('Logout error:', error);
-      }
-    };
+    try {
+      await signOut();
+      router.push('/');
+      router.refresh();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   return (
     <>
       <Header />
       <Wrapper>
         <Container>
           <ImageContainer>
-            <Avatar src={profile.avatar_url || '/default-avatar.svg'} alt="Аватар" />
+            <Avatar src={profile.avatar_url || '/default-avatar.svg'} alt="������" />
             <Name>{profile.name}</Name>
-            <ChangeLink href="/pages/user/accountSettings">Редактировать профиль</ChangeLink>
+            <ChangeLink href="/pages/user/accountSettings">Редактировать</ChangeLink>
             <button
-                    onClick={handleLogout}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#007bff',
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      padding: '4px 8px',
-                    }}
-                  >
-                    Выйти
-                  </button>
+              onClick={handleLogout}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#007bff',
+                cursor: 'pointer',
+                fontSize: '14px',
+                padding: '4px 8px',
+              }}
+            >
+              Выйти
+            </button>
           </ImageContainer>
 
           <UserActivity>
             <Bonus>
-              <BonusText>Ваши баллы: {profile.bonus_points}</BonusText>
+              <BonusText>Количество баллов: {profile.bonus_points}</BonusText>
             </Bonus>
 
             <UserGreyBlock href={'/pages/user/orders'}>

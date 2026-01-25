@@ -43,7 +43,21 @@ export async function updateMenuItem(
     image_url: string | null;
   }
 ) {
-  return supabase.from('menu_items').update(payload).eq('id', id);
+  const result = await supabase
+    .from('menu_items')
+    .update(payload)
+    .eq('id', id)
+    .select('id')
+    .maybeSingle();
+
+  if (!result.error && !result.data) {
+    return {
+      data: null,
+      error: new Error('Menu item update blocked (RLS) or not found'),
+    };
+  }
+
+  return result;
 }
 
 export async function deleteMenuItem(id: string) {

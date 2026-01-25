@@ -47,10 +47,7 @@ export default function Header() {
               <Logo src="/logo.svg" alt="Logotype" />
             </LogoContainer>
             <UserButtons>
-              <UserButtonLink href="/pages/user/account">Аккаунт</UserButtonLink>
-              <Link href="/pages/user/cart">
-                <img src="/cart.svg" alt="Cart" />
-              </Link>
+              <UserButtonLink href="/pages/login">Войти</UserButtonLink>
             </UserButtons>
           </HeaderContent>
         </Wrapper>
@@ -100,9 +97,6 @@ export default function Header() {
             ) : (
               <>
                 <UserButtonLink href="/pages/login">Войти</UserButtonLink>
-                <UserButtonLink href="/cart">
-                  <img src="/cart.svg" alt="Cart" />
-                </UserButtonLink>
               </>
             )}
           </UserButtons>

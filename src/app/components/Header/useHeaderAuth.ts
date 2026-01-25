@@ -28,13 +28,13 @@ export function useHeaderAuth(): UseHeaderAuthResult {
         if (error || !profile) {
           setUser({
             id: session.user.id,
-            name: session.user.email.split('@')[0] || '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c',
+            name: session.user.email.split('@')[0] || 'Пользователь',
             isAdmin: false,
           });
         } else {
           setUser({
             id: session.user.id,
-            name: profile.name || session.user.email.split('@')[0] || '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c',
+            name: profile.name || session.user.email.split('@')[0] || 'Пользователь',
             isAdmin: Boolean(profile.isAdmin),
           });
         }
@@ -42,7 +42,7 @@ export function useHeaderAuth(): UseHeaderAuthResult {
         console.error('Profile error:', err);
         setUser({
           id: session.user.id,
-          name: session.user.email.split('@')[0] || '\u041f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044c',
+          name: session.user.email.split('@')[0] || 'Пользователь',
           isAdmin: false,
         });
       }

@@ -1,14 +1,17 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   deleteProfileById,
   fetchAdminUsers,
   getAvatarPublicUrl,
   updateProfileById,
   uploadAvatar,
+  getIsAdmin,
 } from '@/app/api/client/profiles'
-import { fetchOrderItems, fetchOrdersByUser } from '@/app/api/client/orders'
+import { fetchOrdersWithItemsByUser } from '@/app/api/client/orders'
+import { getSession, onAuthStateChange } from '@/app/api/client/auth'
 import Footer from '@/app/components/Footer/Footer'
 import Header from '@/app/components/Header/Header'
 import { Wrapper } from '@/app/components/Header/HeaderStyles'
@@ -66,7 +69,10 @@ type OrderType = {
 /* ---------- COMPONENT ---------- */
 
 export default function UsersList() {
+  const router = useRouter()
   const [users, setUsers] = useState<UserType[]>([])
+  const [isReady, setIsReady] = useState(false)
+  const [isChecking, setIsChecking] = useState(true)
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -107,8 +113,65 @@ export default function UsersList() {
   }
 
   useEffect(() => {
+    let isMounted = true
+    let unsubscribe: null | (() => void) = null
+
+    const checkAdmin = async (session: any) => {
+      const { data: profile, error: profileError } = await getIsAdmin(session.user.id)
+
+      if (!isMounted) return
+
+      if (profileError || !profile?.isAdmin) {
+        setIsChecking(false)
+        router.push('/')
+        return
+      }
+
+      setIsReady(true)
+      setIsChecking(false)
+    }
+
+    const init = async () => {
+      const { data: { session }, error } = await getSession()
+
+      if (session) {
+        await checkAdmin(session)
+        return
+      }
+
+      if (error) {
+        setIsChecking(false)
+        router.push('/pages/login')
+        return
+      }
+
+      const { data: authListener } = onAuthStateChange(async (_event, nextSession) => {
+        if (!isMounted) return
+        if (nextSession) {
+          await checkAdmin(nextSession)
+        } else {
+          setIsChecking(false)
+          router.push('/pages/login')
+        }
+      })
+
+      unsubscribe = () => authListener.subscription.unsubscribe()
+    }
+
+    init()
+
+    return () => {
+      isMounted = false
+      if (unsubscribe) {
+        unsubscribe()
+      }
+    }
+  }, [router])
+
+  useEffect(() => {
+    if (!isReady) return
     fetchUsers()
-  }, [])
+  }, [isReady])
 
   /* ---------- EDIT USER ---------- */
 
@@ -179,7 +242,7 @@ export default function UsersList() {
   const openOrdersPopup = async (userId: string) => {
     setOrdersLoading(true)
 
-    const { data: ordersData, error } = await fetchOrdersByUser(userId)
+    const { data: ordersData, error } = await fetchOrdersWithItemsByUser(userId)
 
     if (error) {
       alert('Ошибка загрузки заказов')
@@ -187,19 +250,7 @@ export default function UsersList() {
       return
     }
 
-    const ordersWithItems: OrderType[] = await Promise.all(
-  (ordersData || []).map(async (order) => {
-    const { data: itemsData } = await fetchOrderItems(order.id)
-
-    return {
-      ...order,
-      items: (itemsData as unknown as OrderItemType[]) ?? []
-    }
-  })
-)
-
-
-    setCurrentOrders(ordersWithItems)
+    setCurrentOrders((ordersData as OrderType[]) || [])
     setOrdersPopupOpen(true)
     setOrdersLoading(false)
   }
@@ -209,8 +260,9 @@ export default function UsersList() {
   const filteredUsers = users.filter(u =>
     u.name?.toLowerCase().includes(searchTerm.toLowerCase())
   )
+  if (isChecking) return <p>Loading...</p>
 
-  if (loading) return <p>Загрузка...</p>
+  if (loading) return <p>Loading...</p>
 
   return (
     <>

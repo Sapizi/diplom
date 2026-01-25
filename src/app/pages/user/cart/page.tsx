@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import Header from '@/app/components/Header/Header'
 import Footer from '@/app/components/Footer/Footer'
 import { Wrapper } from '@/app/components/Header/HeaderStyles'
@@ -31,25 +32,33 @@ type CartItemType = {
 }
 
 export default function Cart() {
+  const router = useRouter()
   const [cart, setCart] = useState<CartItemType[]>([])
   const [userBonuses, setUserBonuses] = useState(0)
   const [useBonuses, setUseBonuses] = useState(false)
+  const [isAuthChecked, setIsAuthChecked] = useState(false)
 
-  // --- Загрузка корзины и бонусов ---
   useEffect(() => {
     const cartRaw = localStorage.getItem('cart')
     if (cartRaw) setCart(JSON.parse(cartRaw))
 
-    // подгружаем бонусы текущего пользователя
     getCurrentUser().then((user) => {
-      if (!user) return
+      if (!user) {
+        setIsAuthChecked(true)
+        router.push('/pages/login')
+        return
+      }
       fetchUserBonusPoints(user.id).then(({ data: profile }) => {
         if (profile) setUserBonuses(profile.bonus_points ?? 0)
       })
+      setIsAuthChecked(true)
     })
-  }, [])
+  }, [router])
 
-  // --- Изменение количества ---
+  if (!isAuthChecked) {
+    return null
+  }
+
   const updateQuantity = (id: string, delta: number) => {
     setCart(prev => {
       const updated = prev
@@ -62,7 +71,6 @@ export default function Cart() {
     })
   }
 
-  // --- Вычисление суммы ---
   const totalPrice = useMemo(
     () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
     [cart]
@@ -74,6 +82,8 @@ export default function Cart() {
   }, [useBonuses, userBonuses, totalPrice])
 
   const finalPrice = totalPrice - bonusesToSpend
+  const bonusEarned = useMemo(() => Math.floor(totalPrice * 0.1), [totalPrice])
+
   const handlePayment = async () => {
     if (finalPrice <= 0) return
 
@@ -174,19 +184,24 @@ export default function Cart() {
                 <span>{bonusesToSpend} ₽</span>
               </BonusToggle>
             </BonusRow>
-{/*  */}
+
             <BonusRow style={{ fontWeight: 600 }}>
               <span>Итого</span>
               <span>{finalPrice} ₽</span>
             </BonusRow>
 
-            <LoginButton
-  style={{ width: '100%', marginTop: 20 }}
-  onClick={handlePayment}
->
-  Оплатить
-</LoginButton>
+            {!useBonuses && bonusEarned > 0 && (
+              <BonusRow style={{ fontSize: 14, color: '#666' }}>
+                <span>Начислим вам {bonusEarned} бонусов</span>
+              </BonusRow>
+            )}
 
+            <LoginButton
+              style={{ width: '100%', marginTop: 20 }}
+              onClick={handlePayment}
+            >
+              Оплатить
+            </LoginButton>
           </CartSummary>
         </CartContainer>
       </Wrapper>

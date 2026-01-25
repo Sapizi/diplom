@@ -33,7 +33,7 @@ export default function Footer() {
                     </FooterTop>
                     <FooterBottom>
                         <FooterLinksBottom>
-                            <FooterLink href={'#'}>© 2025 ИП Карелин Юрий Сергеевич</FooterLink>
+                            <FooterLink href={'#'}>© 2026 Чипотл </FooterLink>
                             <FooterLink href={'#'}>Оплата заказа</FooterLink>
                             <FooterLink href={'#'}>Оферта</FooterLink>
                             <FooterLink href={'#'}>Политика конфиденциальности</FooterLink>

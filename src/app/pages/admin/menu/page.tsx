@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   createMenuItem,
   deleteMenuItem,
@@ -9,6 +10,8 @@ import {
   uploadMenuImage,
 } from '@/app/api/client/menu'
 import { createCategory, fetchCategories as fetchCategoriesApi } from '@/app/api/client/categories'
+import { getSession, onAuthStateChange } from '@/app/api/client/auth'
+import { getIsAdmin } from '@/app/api/client/profiles'
 import Footer from '@/app/components/Footer/Footer'
 import Header from '@/app/components/Header/Header'
 import { Wrapper } from '@/app/components/Header/HeaderStyles'
@@ -52,8 +55,11 @@ type CategoryType = {
 }
 
 export default function AdminMenuPage() {
+  const router = useRouter()
   // --- Стейты ---
   const [menu, setMenu] = useState<MenuItemType[]>([])
+  const [isReady, setIsReady] = useState(false)
+  const [isChecking, setIsChecking] = useState(true)
   const [categories, setCategories] = useState<CategoryType[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -98,9 +104,88 @@ export default function AdminMenuPage() {
   }
 
   useEffect(() => {
-    fetchMenu()
-    loadCategories()
-  }, [])
+    let isMounted = true
+    let unsubscribe: null | (() => void) = null
+
+    const checkAdmin = async (session: any) => {
+      const { data: profile, error: profileError } = await getIsAdmin(session.user.id)
+
+      if (!isMounted) return
+
+      if (profileError || !profile?.isAdmin) {
+        setIsChecking(false)
+        router.push('/')
+        return
+      }
+
+      setIsReady(true)
+      setIsChecking(false)
+    }
+
+    const init = async () => {
+      const { data: { session }, error } = await getSession()
+
+      if (session) {
+        await checkAdmin(session)
+        return
+      }
+
+      if (error) {
+        setIsChecking(false)
+        router.push('/pages/login')
+        return
+      }
+
+      const { data: authListener } = onAuthStateChange(async (_event, nextSession) => {
+        if (!isMounted) return
+        if (nextSession) {
+          await checkAdmin(nextSession)
+        } else {
+          setIsChecking(false)
+          router.push('/pages/login')
+        }
+      })
+
+      unsubscribe = () => authListener.subscription.unsubscribe()
+    }
+
+    init()
+
+    return () => {
+      isMounted = false
+      if (unsubscribe) {
+        unsubscribe()
+      }
+    }
+  }, [router])
+
+  useEffect(() => {
+    if (!isReady) return
+
+    const loadInitial = async () => {
+      setLoading(true)
+      const [menuResult, categoriesResult] = await Promise.all([
+        fetchAdminMenuItems(),
+        fetchCategoriesApi()
+      ])
+
+      if (menuResult.error) {
+        console.error(menuResult.error)
+      } else {
+        setMenu(menuResult.data || [])
+      }
+
+      if (categoriesResult.error) {
+        console.error(categoriesResult.error)
+      } else {
+        setCategories(categoriesResult.data || [])
+      }
+
+      setLoading(false)
+    }
+
+    loadInitial()
+  }, [isReady])
 
   // --- Удаление позиции ---
   const handleDelete = async (id: string) => {
@@ -137,7 +222,8 @@ export default function AdminMenuPage() {
   }
 
   const handleSaveMenu = async () => {
-    if (!name || !price || !categoryId) {
+    const resolvedCategoryId = categoryId || editingItem?.category_id || ''
+    if (!name || !price || !resolvedCategoryId) {
       alert('Заполни все поля')
       return
     }
@@ -161,7 +247,7 @@ export default function AdminMenuPage() {
         name,
         description,
         price: Number(price),
-        category_id: categoryId,
+        category_id: resolvedCategoryId,
         image_url: imageUrl
       })
 
@@ -175,7 +261,7 @@ export default function AdminMenuPage() {
         name,
         description,
         price: Number(price),
-        category_id: categoryId,
+        category_id: resolvedCategoryId,
         image_url: imageUrl
       })
       if (error) {
@@ -224,8 +310,9 @@ export default function AdminMenuPage() {
     const matchesCategory = categoryFilter ? item.category_id === categoryFilter : true
     return matchesSearch && matchesCategory
   })
+  if (isChecking) return <p>Loading...</p>
 
-  if (loading) return <p>Загрузка...</p>
+  if (loading) return <p>Loading...</p>
 
   return (
     <>

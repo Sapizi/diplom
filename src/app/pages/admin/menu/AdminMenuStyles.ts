@@ -2,6 +2,7 @@ import styled from 'styled-components'
 
 export const MenuList = styled.div`
   display: flex;
+  margin-top: 20px;
   gap: 20px;
   flex-direction: column;
 `

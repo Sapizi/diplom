@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { getCurrentUser } from '@/app/api/client/auth'
-import { fetchOrderItems, fetchOrdersByUser } from '@/app/api/client/orders'
+import { fetchOrdersWithItemsByUser } from '@/app/api/client/orders'
 
 import Header from '@/app/components/Header/Header'
 import Footer from '@/app/components/Footer/Footer'
@@ -35,6 +35,7 @@ type OrderItemType = {
 type OrderType = {
   id: string
   created_at: string
+  status?: string
   items: OrderItemType[]
 }
 
@@ -43,6 +44,28 @@ type OrderType = {
 export default function UserOrdersPage() {
   const [orders, setOrders] = useState<OrderType[]>([])
   const [loading, setLoading] = useState(true)
+
+  const resolveStatusKey = (status?: string) => {
+    if (!status || status === 'paid') return 'accepted'
+    if (status === 'accepted' || status === 'in_progress' || status === 'ready') return status
+    return 'accepted'
+  }
+
+  const getStatusLabel = (status?: string) => {
+    const key = resolveStatusKey(status)
+    if (key === 'accepted') return 'Принят'
+    if (key === 'in_progress') return 'В работе'
+    if (key === 'ready') return 'Готов'
+    return 'Принят'
+  }
+
+  const getStatusColor = (status?: string) => {
+    const key = resolveStatusKey(status)
+    if (key === 'accepted') return '#9E9E9E'
+    if (key === 'in_progress') return '#F28C28'
+    if (key === 'ready') return '#2E7D32'
+    return '#9E9E9E'
+  }
 
   useEffect(() => {
     fetchOrders()
@@ -58,7 +81,7 @@ export default function UserOrdersPage() {
       return
     }
 
-    const { data: ordersData, error } = await fetchOrdersByUser(user.id)
+    const { data: ordersData, error } = await fetchOrdersWithItemsByUser(user.id)
 
     if (error) {
       console.error(error)
@@ -66,18 +89,7 @@ export default function UserOrdersPage() {
       return
     }
 
-    const ordersWithItems: OrderType[] = await Promise.all(
-      (ordersData || []).map(async (order) => {
-        const { data: itemsData } = await fetchOrderItems(order.id)
-
-        return {
-          ...order,
-          items: (itemsData as unknown as OrderItemType[]) ?? []
-        }
-      })
-    )
-
-    setOrders(ordersWithItems)
+    setOrders((ordersData as OrderType[]) || [])
     setLoading(false)
   }
 
@@ -111,6 +123,7 @@ export default function UserOrdersPage() {
                 <Description>
                   Дата: {order.created_at.split('T')[0]}
                 </Description>
+                <Description>Статус: <span style={{ color: getStatusColor(order.status), fontWeight: 600 }}>{getStatusLabel(order.status)}</span></Description>
 
                 <Description>Позиции:</Description>
 

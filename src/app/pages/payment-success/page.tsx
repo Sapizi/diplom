@@ -10,7 +10,7 @@ import { getSession } from '@/app/api/client/auth'
 
 export default function PaymentSuccessPage() {
   const [status, setStatus] = useState<'loading' | 'success' | 'failed'>('loading')
-  const [message, setMessage] = useState('\u041f\u0440\u043e\u0432\u0435\u0440\u044f\u0435\u043c \u043e\u043f\u043b\u0430\u0442\u0443...')
+  const [message, setMessage] = useState('Проверяем оплату...')
   const [details, setDetails] = useState<string | null>(null)
 
   useEffect(() => {
@@ -22,21 +22,21 @@ export default function PaymentSuccessPage() {
       const pendingRaw = localStorage.getItem('pending_payment')
       if (!pendingRaw) {
         setStatus('failed')
-        setMessage('\u041d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d \u043f\u043b\u0430\u0442\u0435\u0436 \u0434\u043b\u044f \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u044f')
+        setMessage('Не найден платеж для подтверждения')
         return true
       }
 
       const pending = JSON.parse(pendingRaw) as { paymentId?: string; orderId?: string }
       if (!pending.paymentId) {
         setStatus('failed')
-        setMessage('\u041d\u0435\u043a\u043e\u0440\u0440\u0435\u043a\u0442\u043d\u044b\u0435 \u0434\u0430\u043d\u043d\u044b\u0435 \u043f\u043b\u0430\u0442\u0435\u0436\u0430')
+        setMessage('Некорректные данные платежа')
         return true
       }
 
       const { data: { session } } = await getSession()
       if (!session?.access_token) {
         setStatus('failed')
-        setMessage('\u041d\u0443\u0436\u043d\u043e \u0432\u043e\u0439\u0442\u0438 \u0432 \u0430\u043a\u043a\u0430\u0443\u043d\u0442')
+        setMessage('Нужно войти в аккаунт')
         return true
       }
 
@@ -51,13 +51,13 @@ export default function PaymentSuccessPage() {
         localStorage.removeItem('cart')
         localStorage.removeItem('pending_payment')
         setStatus('success')
-        setMessage('\u041e\u043f\u043b\u0430\u0442\u0430 \u043f\u0440\u043e\u0448\u043b\u0430 \u0443\u0441\u043f\u0435\u0448\u043d\u043e. \u0417\u0430\u043a\u0430\u0437 \u043f\u043e\u044f\u0432\u0438\u0442\u0441\u044f \u0432 \u0430\u043a\u043a\u0430\u0443\u043d\u0442\u0435.')
+        setMessage('Оплата прошла успешно. Заказ появится в аккаунте.')
         return true
       }
 
       if (result?.status === 'canceled') {
         setStatus('failed')
-        setMessage('\u041f\u043b\u0430\u0442\u0435\u0436 \u043e\u0442\u043c\u0435\u043d\u0435\u043d')
+        setMessage('Платеж отменен')
         return true
       }
 
@@ -71,12 +71,12 @@ export default function PaymentSuccessPage() {
       attempts += 1
       if (attempts >= maxAttempts) {
         setStatus('failed')
-        setMessage('\u041e\u043f\u043b\u0430\u0442\u0430 \u0435\u0449\u0435 \u043d\u0435 \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0430. \u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u043e\u0431\u043d\u043e\u0432\u0438\u0442\u044c \u0441\u0442\u0440\u0430\u043d\u0438\u0446\u0443 \u043f\u043e\u0437\u0436\u0435.')
+        setMessage('Оплата еще не подтверждена. Попробуйте обновить страницу позже.')
         return
       }
 
       setStatus('loading')
-      setMessage('\u041e\u0436\u0438\u0434\u0430\u0435\u043c \u043f\u043e\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043d\u0438\u044f \u043e\u043f\u043b\u0430\u0442\u044b...')
+      setMessage('Ожидаем подтверждения оплаты...')
       setTimeout(tick, intervalMs)
     }
 
@@ -87,7 +87,7 @@ export default function PaymentSuccessPage() {
     <>
       <Header />
       <Wrapper>
-        <Title>\u0421\u0442\u0430\u0442\u0443\u0441 \u043e\u043f\u043b\u0430\u0442\u044b</Title>
+        <Title>Статус оплаты</Title>
         <div style={{ marginTop: 20, fontSize: 18 }}>
           {message}
         </div>
@@ -98,7 +98,7 @@ export default function PaymentSuccessPage() {
         )}
         {status === 'success' && (
           <div style={{ marginTop: 12 }}>
-            <a href="/pages/user/orders">\u041f\u0435\u0440\u0435\u0439\u0442\u0438 \u0432 \u0437\u0430\u043a\u0430\u0437\u044b</a>
+            <a href="/pages/user/orders">Перейти в заказы</a>
           </div>
         )}
       </Wrapper>

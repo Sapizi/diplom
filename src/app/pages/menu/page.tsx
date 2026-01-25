@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { fetchMenuItems } from '@/app/api/client/menu'
+import { getCurrentUser } from '@/app/api/client/auth'
 import Header from '@/app/components/Header/Header'
 import Footer from '@/app/components/Footer/Footer'
 import { Wrapper } from '@/app/components/Header/HeaderStyles'
@@ -37,6 +39,7 @@ type CartItemType = {
 }
 
 export default function MenuPage() {
+  const router = useRouter()
   const [menu, setMenu] = useState<MenuItemType[]>([])
   const [loading, setLoading] = useState(true)
   const [sort, setSort] = useState<'asc' | 'desc' | ''>('')
@@ -59,7 +62,14 @@ export default function MenuPage() {
     fetchMenu()
   }, [sort])
 
-  const addToCart = (item: MenuItemType) => {
+  const addToCart = async (item: MenuItemType) => {
+    const user = await getCurrentUser()
+    if (!user) {
+      alert('Нужно войти в аккаунт')
+      router.push('/pages/login')
+      return
+    }
+
     const cartRaw = localStorage.getItem('cart')
     const cart: CartItemType[] = cartRaw ? JSON.parse(cartRaw) : []
 
@@ -95,8 +105,8 @@ export default function MenuPage() {
             <SortOption value="" disabled>
               Сортировать по
             </SortOption>
-            <SortOption value="asc">По стоимости ⭡</SortOption>
-            <SortOption value="desc">По стоимости ⭣</SortOption>
+            <SortOption value="asc">По стоимости ↑</SortOption>
+            <SortOption value="desc">По стоимости ↓</SortOption>
           </SortSelect>
         </SortBlock>
 

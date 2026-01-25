@@ -65,7 +65,7 @@ export async function POST(req: Request) {
           return_url: `${resolveSiteUrl()}/pages/payment-success`
         },
         capture: true,
-        description: '\u041f\u043e\u043b\u0443\u0447\u0435\u043d\u0438\u0435 \u043e\u043f\u043b\u0430\u0442\u044b \u0437\u0430\u043a\u0430\u0437\u0430'
+        description: 'Получение оплаты заказа'
       },
       uuidv4()
     )
@@ -124,7 +124,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error(error)
     return NextResponse.json(
-      { error: '\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u043e\u0437\u0434\u0430\u043d\u0438\u044f \u043f\u043b\u0430\u0442\u0435\u0436\u0430' },
+      { error: 'Ошибка создания платежа' },
       { status: 500 }
     )
   }

@@ -39,7 +39,7 @@ export const CartSummary = styled.div`
   background-color: #ededed;
   border-radius: 20px;
   padding: 20px;
-    height: 260px;
+    height: 300px;
   display: flex;
   flex-direction: column;
   gap: 14px;

@@ -10,7 +10,7 @@ import { Title } from "@/app/MainPageStyles";
 import { AdminBlock, AdminContainer } from "./AdminStyles";
 import { GreyBlockText } from "../../user/account/AccountStyles";
 
-import { getSession, signOut } from "@/app/api/client/auth";
+import { getSession, onAuthStateChange, signOut } from "@/app/api/client/auth";
 import { getIsAdmin } from "@/app/api/client/profiles";
 import { fetchDashboardCounts } from "@/app/api/client/dashboard";
 import { subscribeAdminDashboard } from "@/app/api/client/realtime";
@@ -26,19 +26,17 @@ export default function AdminMain() {
 
   // Проверка сессии и прав пользователя
   useEffect(() => {
-    const checkAdmin = async () => {
-      const { data: { session }, error } = await getSession();
+    let isMounted = true;
+    let unsubscribe: null | (() => void) = null;
 
-      if (error || !session) {
-        router.push('/pages/login'); // если нет сессии — на логин
-        return;
-      }
-
-      // Получаем профиль пользователя
+    const checkAdmin = async (session: any) => {
       const { data: profile, error: profileError } = await getIsAdmin(session.user.id);
 
+      if (!isMounted) return;
+
       if (profileError || !profile?.isAdmin) {
-        router.push('/'); // если не админ — на главную
+        setIsLoading(false);
+        router.push('/');
         return;
       }
 
@@ -46,7 +44,41 @@ export default function AdminMain() {
       setIsLoading(false);
     };
 
-    checkAdmin();
+    const init = async () => {
+      const { data: { session }, error } = await getSession();
+
+      if (session) {
+        await checkAdmin(session);
+        return;
+      }
+
+      if (error) {
+        setIsLoading(false);
+        router.push('/pages/login');
+        return;
+      }
+
+      const { data: authListener } = onAuthStateChange(async (_event, nextSession) => {
+        if (!isMounted) return;
+        if (nextSession) {
+          await checkAdmin(nextSession);
+        } else {
+          setIsLoading(false);
+          router.push('/pages/login');
+        }
+      });
+
+      unsubscribe = () => authListener.subscription.unsubscribe();
+    };
+
+    init();
+
+    return () => {
+      isMounted = false;
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [router]);
 
   // Функция для получения количества записей

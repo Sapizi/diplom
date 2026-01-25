@@ -6,7 +6,7 @@ export const FooterContainer = styled.footer`
     height: 205px;
     width: 100%;
     border-top: 1px solid #CDCDCD;
-    margin-top: 83px;
+    margin-top: 20px;
 
 `
 export const FooterTop = styled.div`
@@ -64,7 +64,7 @@ export const FooterLink = styled(Link)`
 export const SystemsOfPayment = styled.div`
     display: flex;
     gap: 15px;
-    margin-left: 318px;
+    margin-left: 500px;
 `
 export const SystemOfPayment = styled.img`
     
