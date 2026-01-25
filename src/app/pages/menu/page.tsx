@@ -37,6 +37,7 @@ type CartItemType = {
   image_url: string | null
   quantity: number
 }
+const MENU_CACHE_TTL_MS = 5 * 60 * 1000
 
 export default function MenuPage() {
   const router = useRouter()
@@ -59,8 +60,46 @@ export default function MenuPage() {
   }
 
   useEffect(() => {
-    fetchMenu()
-  }, [sort])
+  let isMounted = true
+  const cacheKey = `menu_cache_${sort || 'default'}`
+
+  const cachedRaw = localStorage.getItem(cacheKey)
+  if (cachedRaw) {
+    try {
+      const cached = JSON.parse(cachedRaw) as { ts: number; data: MenuItemType[] }
+      if (Date.now() - cached.ts < MENU_CACHE_TTL_MS) {
+        setMenu(cached.data)
+        setLoading(false)
+      }
+    } catch (error) {
+      console.warn('Menu cache parse error', error)
+    }
+  }
+
+  const fetchMenu = async () => {
+    const { data, error } = await fetchMenuItems(sort)
+    if (!isMounted) return
+
+    if (error) {
+      console.error(error)
+      setLoading(false)
+      return
+    }
+
+    const items = data || []
+    setMenu(items)
+    setLoading(false)
+    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: items }))
+  }
+
+  setLoading(prev => prev && menu.length === 0)
+  fetchMenu()
+
+  return () => {
+    isMounted = false
+  }
+}, [sort])
+
 
   const addToCart = async (item: MenuItemType) => {
     const user = await getCurrentUser()
