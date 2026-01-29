@@ -47,7 +47,7 @@ export default function Header() {
               <Logo src="/logo.svg" alt="Logotype" />
             </LogoContainer>
             <UserButtons>
-              <UserButtonLink href="/pages/login">Войти</UserButtonLink>
+              <UserButtonLink href="/login">Войти</UserButtonLink>
             </UserButtons>
           </HeaderContent>
         </Wrapper>
@@ -78,7 +78,7 @@ export default function Header() {
               <>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <Link 
-                    href={user.isAdmin ? "/pages/admin/main" : "/pages/user/account"}
+                    href={user.isAdmin ? "/admin/main" : "/user/account"}
                     style={{
                       color: '#333',
                       textDecoration: 'none',
@@ -90,13 +90,13 @@ export default function Header() {
                   </Link>
                   
                 </div>
-                <Link href="/pages/user/cart">
+                <Link href="/user/cart">
                   <img src="/cart.svg" alt="Cart" />
                 </Link>
               </>
             ) : (
               <>
-                <UserButtonLink href="/pages/login">Войти</UserButtonLink>
+                <UserButtonLink href="/login">Войти</UserButtonLink>
               </>
             )}
           </UserButtons>

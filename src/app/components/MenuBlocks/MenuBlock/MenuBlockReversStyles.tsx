@@ -17,9 +17,9 @@ export default function MenuBlockReverse(){
                     </MenuBlockImages>
                 </MenuBlockContentRight>
                 <MenuBlockContentLeft>
-                    <MenuBlockTitle>Комбо обеды</MenuBlockTitle>
-                    <MenuBlockDescription>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit</MenuBlockDescription>
-                    <MenuBlockLink href={'#'}>Смотреть всё</MenuBlockLink>
+                    <MenuBlockTitle>Шаурма</MenuBlockTitle>
+                    <MenuBlockDescription>Шаурма — это идеальное сочетание насыщенного вкуса, сытности и свежести, которое давно стало выбором для тех, кто ценит быструю, но качественную еду. Сочное мясо, приготовленное на гриле до румяной корочки, гармонично сочетается с хрустящими овощами, ароматными специями и фирменными соусами, создавая сбалансированный и запоминающийся вкус.</MenuBlockDescription>
+                    <MenuBlockLink href={'/menu'}>Смотреть всё</MenuBlockLink>
                 </MenuBlockContentLeft>
             </MenuBlockMaket>
         </>

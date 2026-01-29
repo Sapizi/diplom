@@ -62,7 +62,7 @@ export async function POST(req: Request) {
         },
         confirmation: {
           type: 'redirect',
-          return_url: `${resolveSiteUrl()}/pages/payment-success`
+          return_url: `${resolveSiteUrl()}/payment-success`
         },
         capture: true,
         description: 'Получение оплаты заказа'

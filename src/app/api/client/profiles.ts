@@ -63,6 +63,30 @@ export async function updateProfileById(
   return supabase.from('profiles').update(payload).eq('id', userId);
 }
 
+export async function updateProfileByIdAdmin(
+  userId: string,
+  payload: {
+    name?: string | null;
+    email?: string | null;
+    bonus_points?: number | null;
+    avatar_url?: string | null;
+    phone?: string | null;
+  }
+) {
+  const res = await fetch('/api/admin/update-user', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, payload }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return { data: null, error: new Error(data?.error ?? 'update_failed') };
+  }
+
+  return { data, error: null };
+}
+
 export async function upsertProfileById(
   userId: string,
   payload: Record<string, string | null>
@@ -71,7 +95,18 @@ export async function upsertProfileById(
 }
 
 export async function deleteProfileById(userId: string) {
-  return supabase.from('profiles').delete().eq('id', userId);
+  const res = await fetch('/api/admin/delete-user', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return { data: null, error: new Error(data?.error ?? 'delete_failed') };
+  }
+
+  return { data, error: null };
 }
 
 export async function fetchAdminUsers() {

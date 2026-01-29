@@ -14,6 +14,7 @@ import { getSession, onAuthStateChange, signOut } from "@/app/api/client/auth";
 import { getIsAdmin } from "@/app/api/client/profiles";
 import { fetchDashboardCounts } from "@/app/api/client/dashboard";
 import { subscribeAdminDashboard } from "@/app/api/client/realtime";
+import { LoginButton } from '../menu/AdminMenuStyles';
 
 export default function AdminMain() {
   const router = useRouter();
@@ -114,21 +115,16 @@ export default function AdminMain() {
       <Header />
 
       <Wrapper>
-        <Title>Главная</Title>
+        <Title style={{marginTop:'50px'}}>Главная</Title>
 
-        <button
+        <LoginButton
           onClick={handleLogout}
           style={{
-            background: 'none',
-            border: 'none',
-            color: '#007bff',
-            cursor: 'pointer',
-            fontSize: '14px',
-            padding: '4px 8px',
+            marginTop:'20px'
           }}
         >
           Выйти
-        </button>
+        </LoginButton>
 
         <AdminContainer>
           <AdminBlock href={'/pages/admin/users'}>

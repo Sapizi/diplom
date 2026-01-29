@@ -88,7 +88,7 @@ export default function PaymentSuccessPage() {
       <Header />
       <Wrapper>
         <Title>Статус оплаты</Title>
-        <div style={{ marginTop: 20, fontSize: 18 }}>
+        <div style={{ marginTop: 20, fontSize: 18,  }}>
           {message}
         </div>
         {details && (
@@ -97,8 +97,8 @@ export default function PaymentSuccessPage() {
           </div>
         )}
         {status === 'success' && (
-          <div style={{ marginTop: 12 }}>
-            <a href="/pages/user/orders">Перейти в заказы</a>
+          <div style={{ marginTop: 12 , marginBottom:580}}>
+            <a href="/user/orders">Перейти в заказы</a>
           </div>
         )}
       </Wrapper>

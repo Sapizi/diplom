@@ -7,6 +7,7 @@ export const FooterContainer = styled.footer`
     width: 100%;
     border-top: 1px solid #CDCDCD;
     margin-top: 20px;
+    
 
 `
 export const FooterTop = styled.div`

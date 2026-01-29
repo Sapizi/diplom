@@ -1,7 +1,7 @@
 'use client';
 import Header from "@/app/components/Header/Header";
 import Footer from "@/app/components/Footer/Footer";
-import {CheckboxContainer,CheckBoxLink,CheckBoxText,LoginButton,LoginCheckbox,LoginContainer,LoginForm,LoginFormInput,LoginFormLabel,LoginFormTitle,LoginInputContainer} from "../registration/RegistrationStyles";
+import {CheckboxContainer,CheckBoxLink,CheckBoxText,LoginButton,LoginCheckbox,LoginContainer,LoginForm,LoginFormInput,LoginFormLabel,LoginFormTitle,LoginInputContainer} from "@/app/components/auth/AuthStyles";
 import { useState } from 'react';
 import { signInWithPassword } from '@/app/api/client/auth';
 import { useRouter } from 'next/navigation';
@@ -77,7 +77,7 @@ export default function Login() {
 
           <CheckBoxText style={{ marginTop: '10px', textAlign: 'center' }}>
             Еще нет аккаунта?{' '}
-            <CheckBoxLink href="/pages/registration">Зарегистрироваться</CheckBoxLink>
+            <CheckBoxLink href="/registration">Зарегистрироваться</CheckBoxLink>
           </CheckBoxText>
 
           <CheckBoxText style={{ marginTop: '8px', textAlign: 'center' }}>

@@ -11,8 +11,8 @@ export default function MenuBlock(){
             <MenuBlockMaket>
                 <MenuBlockContentLeft>
                     <MenuBlockTitle>Комбо обеды</MenuBlockTitle>
-                    <MenuBlockDescription>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Lorem ipsum dolor sit amet, consectetur adipiscing elit</MenuBlockDescription>
-                    <MenuBlockLink href={'/pages/menu'}>Смотреть всё</MenuBlockLink>
+                    <MenuBlockDescription>Комбо-обеды — это удобное и выгодное решение для тех, кто хочет получить полноценный приём пищи без лишних раздумий. В одном наборе собраны самые удачные позиции меню, которые идеально дополняют друг друга и дарят ощущение сытного и сбалансированного обеда. Горячие блюда, свежие добавки и напитки объединяются в продуманные сочетания, позволяя насладиться разнообразием вкусов за одну цену.</MenuBlockDescription>
+                    <MenuBlockLink href={'/menu'}>Смотреть всё</MenuBlockLink>
                 </MenuBlockContentLeft>
                 <MenuBlockContentRight>
                     <MenuBlockImages>

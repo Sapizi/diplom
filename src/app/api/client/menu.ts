@@ -30,7 +30,18 @@ export async function createMenuItem(payload: {
   category_id: string;
   image_url: string | null;
 }) {
-  return supabase.from('menu_items').insert(payload);
+  const res = await fetch('/api/admin/menu-items/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ payload }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return { data: null, error: new Error(data?.error ?? 'create_failed') };
+  }
+
+  return { data, error: null };
 }
 
 export async function updateMenuItem(
@@ -43,25 +54,33 @@ export async function updateMenuItem(
     image_url: string | null;
   }
 ) {
-  const result = await supabase
-    .from('menu_items')
-    .update(payload)
-    .eq('id', id)
-    .select('id')
-    .maybeSingle();
+  const res = await fetch('/api/admin/menu-items/update', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, payload }),
+  });
 
-  if (!result.error && !result.data) {
-    return {
-      data: null,
-      error: new Error('Menu item update blocked (RLS) or not found'),
-    };
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return { data: null, error: new Error(data?.error ?? 'update_failed') };
   }
 
-  return result;
+  return { data, error: null };
 }
 
 export async function deleteMenuItem(id: string) {
-  return supabase.from('menu_items').delete().eq('id', id);
+  const res = await fetch('/api/admin/menu-items/delete', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return { data: null, error: new Error(data?.error ?? 'delete_failed') };
+  }
+
+  return { data, error: null };
 }
 
 export async function uploadMenuImage(fileName: string, file: File) {

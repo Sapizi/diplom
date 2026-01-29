@@ -20,7 +20,7 @@ import {
   TitleBlock,
 } from '../admin/menu/AdminMenuStyles'
 import { SortBlock, SortOption, SortSelect } from './MenuPageStyles'
-import { LoginButton } from '../registration/RegistrationStyles'
+import { LoginButton } from '@/app/components/auth/AuthStyles'
 
 type MenuItemType = {
   id: string
@@ -44,6 +44,7 @@ export default function MenuPage() {
   const [menu, setMenu] = useState<MenuItemType[]>([])
   const [loading, setLoading] = useState(true)
   const [sort, setSort] = useState<'asc' | 'desc' | ''>('')
+  const [justAddedId, setJustAddedId] = useState<string | null>(null)
 
   const fetchMenu = async () => {
     setLoading(true)
@@ -105,7 +106,7 @@ export default function MenuPage() {
     const user = await getCurrentUser()
     if (!user) {
       alert('Нужно войти в аккаунт')
-      router.push('/pages/login')
+      router.push('/login')
       return
     }
 
@@ -127,6 +128,10 @@ export default function MenuPage() {
     }
 
     localStorage.setItem('cart', JSON.stringify(cart))
+    setJustAddedId(item.id)
+    setTimeout(() => {
+      setJustAddedId(prev => (prev === item.id ? null : prev))
+    }, 500)
   }
 
   if (loading) return <p>Загрузка...</p>
@@ -162,7 +167,14 @@ export default function MenuPage() {
                 <Price>{item.price} ₽</Price>
               </MenuItemDesc>
               <MenuItemButtons>
-                <LoginButton onClick={() => addToCart(item)}>
+                <LoginButton
+                  onClick={() => addToCart(item)}
+                  style={{
+                    boxShadow: justAddedId === item.id ? '0 0 0 3px rgba(249, 144, 38, 0.35)' : 'none',
+                    filter: justAddedId === item.id ? 'brightness(1.05)' : 'none',
+                    transition: 'box-shadow 0.2s ease, filter 0.2s ease',
+                  }}
+                >
                   В корзину
                 </LoginButton>
               </MenuItemButtons>

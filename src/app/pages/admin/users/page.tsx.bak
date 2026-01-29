@@ -6,7 +6,7 @@ import {
   deleteProfileById,
   fetchAdminUsers,
   getAvatarPublicUrl,
-  updateProfileById,
+  updateProfileByIdAdmin,
   uploadAvatar,
   getIsAdmin,
 } from '@/app/api/client/profiles'
@@ -204,7 +204,7 @@ export default function UsersList() {
       avatarUrl = data.publicUrl
     }
 
-    const { error } = await updateProfileById(editingUser.id, {
+    const { error } = await updateProfileByIdAdmin(editingUser.id, {
       name,
       email,
       bonus_points: Number(bonusPoints),

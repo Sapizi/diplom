@@ -2,7 +2,7 @@
 
 import Header from '@/app/components/Header/Header';
 import Footer from '@/app/components/Footer/Footer';
-import {CheckboxContainer,CheckBoxLink,CheckBoxText,LoginButton,LoginContainer,LoginForm,LoginFormInput,LoginFormLabel,LoginFormTitle,LoginInputContainer,} from '@/app/pages/registration/RegistrationStyles';
+import {CheckboxContainer,CheckBoxLink,CheckBoxText,LoginButton,LoginContainer,LoginForm,LoginFormInput,LoginFormLabel,LoginFormTitle,LoginInputContainer,} from '@/app/components/auth/AuthStyles';
 import { useState } from 'react';
 import { signUpWithEmail } from '@/app/api/client/auth';
 export default function RegistrationPage() {
@@ -157,7 +157,7 @@ export default function RegistrationPage() {
 
           <CheckBoxText style={{ marginTop: '20px', textAlign: 'center' }}>
             Уже есть аккаунт?{' '}
-            <CheckBoxLink href="/pages/login">Войти</CheckBoxLink>
+            <CheckBoxLink href="/login">Войти</CheckBoxLink>
           </CheckBoxText>
         </LoginForm>
       </LoginContainer>
