@@ -1,0 +1,23 @@
+.actionsRow {
+  display: flex;
+  gap: 20px;
+}
+
+.actionButton {
+  width: 250px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.filterControl {
+  flex: 1 1 200px;
+}
+
+.deleteButton {
+  background-color: red;
+}

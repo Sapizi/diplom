@@ -1,0 +1,85 @@
+.imageContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  width: 280px;
+  height: 304px;
+}
+
+.avatar {
+  width: 207px;
+  height: 207px;
+  border-radius: 50%;
+}
+
+.name {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.changeLink {
+  color: #000;
+  font-size: 15px;
+  font-weight: 400;
+  transition: 0.1s;
+
+  &:hover {
+    color: #f99026;
+  }
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 33px;
+}
+
+.userActivity {
+  display: flex;
+  flex-direction: row;
+  gap: 26px;
+  margin-top: 35px;
+}
+
+.bonus {
+  width: 730px;
+  height: 268px;
+  padding: 23px;
+  border-radius: 10px;
+  background: linear-gradient(to right, #ffb56b 0%, #ff7f24 48%, #f99026 100%);
+}
+
+.bonusText {
+  color: white;
+  font-size: 36px;
+  font-weight: 700;
+}
+
+.bonusBalance {
+  color: white;
+  font-size: 128px;
+  font-weight: 750;
+}
+
+.userGreyBlock {
+  width: 339px;
+  height: 268px;
+  padding: 23px;
+  border-radius: 10px;
+  background-color: #ededed;
+  cursor: pointer;
+}
+
+.greyBlockText {
+  color: black;
+  font-size: 36px;
+  font-weight: 700;
+}
+
+.greyBlockP {
+  color: black;
+  font-size: 128px;
+  font-weight: 750;
+}

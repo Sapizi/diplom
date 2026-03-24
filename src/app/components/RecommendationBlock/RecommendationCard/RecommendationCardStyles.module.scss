@@ -1,0 +1,31 @@
+.recommendationCardMaket {
+  display: flex;
+  width: 276px;
+  height: 272px;
+  border-radius: 10px;
+  background-color: #ededed;
+  transition: 0.2s;
+
+  &:hover {
+    border: 3px solid #f99026;
+    cursor: pointer;
+  }
+}
+
+.recCardContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-left: 45px;
+}
+
+.recCardTitle {
+  margin-top: 23px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.recCardText {
+  font-size: 16px;
+}

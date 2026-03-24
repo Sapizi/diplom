@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import Header from "@/app/components/Header/Header";
 import Footer from "@/app/components/Footer/Footer";
@@ -14,7 +14,8 @@ import { getSession, onAuthStateChange, signOut } from "@/app/api/client/auth";
 import { getIsAdmin } from "@/app/api/client/profiles";
 import { fetchDashboardCounts } from "@/app/api/client/dashboard";
 import { subscribeAdminDashboard } from "@/app/api/client/realtime";
-import { LoginButton } from '../menu/AdminMenuStyles';
+import { LoginButton } from "../menu/AdminMenuStyles";
+import styles from "./page.module.scss";
 
 export default function AdminMain() {
   const router = useRouter();
@@ -25,7 +26,6 @@ export default function AdminMain() {
   const [menuCount, setMenuCount] = useState(0);
   const [ordersCount, setOrdersCount] = useState(0);
 
-  // Проверка сессии и прав пользователя
   useEffect(() => {
     let isMounted = true;
     let unsubscribe: null | (() => void) = null;
@@ -37,7 +37,7 @@ export default function AdminMain() {
 
       if (profileError || !profile?.isAdmin) {
         setIsLoading(false);
-        router.push('/');
+        router.push("/");
         return;
       }
 
@@ -46,7 +46,10 @@ export default function AdminMain() {
     };
 
     const init = async () => {
-      const { data: { session }, error } = await getSession();
+      const {
+        data: { session },
+        error,
+      } = await getSession();
 
       if (session) {
         await checkAdmin(session);
@@ -55,7 +58,7 @@ export default function AdminMain() {
 
       if (error) {
         setIsLoading(false);
-        router.push('/login');
+        router.push("/login");
         return;
       }
 
@@ -65,7 +68,7 @@ export default function AdminMain() {
           await checkAdmin(nextSession);
         } else {
           setIsLoading(false);
-          router.push('/login');
+          router.push("/login");
         }
       });
 
@@ -76,13 +79,10 @@ export default function AdminMain() {
 
     return () => {
       isMounted = false;
-      if (unsubscribe) {
-        unsubscribe();
-      }
+      if (unsubscribe) unsubscribe();
     };
   }, [router]);
 
-  // Функция для получения количества записей
   const fetchCounts = async () => {
     const counts = await fetchDashboardCounts();
     setUsersCount(counts.users);
@@ -91,10 +91,9 @@ export default function AdminMain() {
   };
 
   useEffect(() => {
-    if (!userIsAdmin) return; // если не админ, не делаем запросы
+    if (!userIsAdmin) return;
 
     fetchCounts();
-
     const unsubscribe = subscribeAdminDashboard(fetchCounts);
 
     return () => {
@@ -104,7 +103,7 @@ export default function AdminMain() {
 
   const handleLogout = async () => {
     await signOut();
-    router.push('/');
+    router.push("/");
     router.refresh();
   };
 
@@ -115,31 +114,26 @@ export default function AdminMain() {
       <Header />
 
       <Wrapper>
-        <Title style={{marginTop:'50px'}}>Главная</Title>
+        <Title className={styles.pageTitle}>Главная</Title>
 
-        <LoginButton
-          onClick={handleLogout}
-          style={{
-            marginTop:'20px'
-          }}
-        >
+        <LoginButton onClick={handleLogout} className={styles.logoutButton}>
           Выйти
         </LoginButton>
 
         <AdminContainer>
-          <AdminBlock href={'/admin/users'}>
+          <AdminBlock href="/admin/users">
             <GreyBlockText>
               Пользователи: <b>{usersCount}</b>
             </GreyBlockText>
           </AdminBlock>
 
-          <AdminBlock href={'/admin/menu'}>
+          <AdminBlock href="/admin/menu">
             <GreyBlockText>
               Позиции меню: <b>{menuCount}</b>
             </GreyBlockText>
           </AdminBlock>
 
-          <AdminBlock href={'/admin/orders'}>
+          <AdminBlock href="/admin/orders">
             <GreyBlockText>
               Заказы: <b>{ordersCount}</b>
             </GreyBlockText>

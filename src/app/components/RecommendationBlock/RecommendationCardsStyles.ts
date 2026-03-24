@@ -1,5 +1,7 @@
-import styled from "styled-components";
-export const RecommendationCardContainer = styled.div`
-    display: flex;
-    gap: 20px;
-`
+import styles from "./RecommendationCardsStyles.module.scss";
+import { createStyledComponent } from "@/lib/scssComponents";
+
+export const RecommendationCardContainer = createStyledComponent(
+  "div",
+  styles.recommendationCardContainer,
+);

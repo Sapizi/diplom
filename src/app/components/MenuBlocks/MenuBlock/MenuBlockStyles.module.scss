@@ -1,0 +1,52 @@
+.menuBlockMaket {
+  display: flex;
+  flex-direction: row;
+  gap: 106px;
+  width: 1263px;
+  height: 229px;
+}
+
+.menuBlockContentLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  width: 610px;
+}
+
+.menuBlockTitle {
+  font-size: 36px;
+  font-weight: bold;
+}
+
+.menuBlockDescription {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.menuBlockLink {
+  color: black;
+  font-size: 20px;
+  font-weight: bold;
+  text-decoration: none;
+  transition: color 0.1s;
+
+  &:hover {
+    color: #f99026;
+  }
+}
+
+.menuBlockContentRight {
+  display: flex;
+  gap: 20px;
+}
+
+.menuBlockImages {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
+
+.menuBlockImage {
+  width: 263px;
+  height: 229px;
+}

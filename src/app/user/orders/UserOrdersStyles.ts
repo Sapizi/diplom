@@ -1,12 +1,4 @@
-import styled from "styled-components";
+import styles from "./UserOrdersStyles.module.scss";
+import { createStyledComponent } from "@/lib/scssComponents";
 
-export const UserOrder = styled.div`
-    width: 100%;
-    
-    background-color: #ededed;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 20px;
-    border-radius: 20px;
-`
+export const UserOrder = createStyledComponent("div", styles.userOrder);

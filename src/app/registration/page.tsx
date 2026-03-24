@@ -1,19 +1,32 @@
 'use client';
 
-import Header from '@/app/components/Header/Header';
-import Footer from '@/app/components/Footer/Footer';
-import {CheckboxContainer,CheckBoxLink,CheckBoxText,LoginButton,LoginContainer,LoginForm,LoginFormInput,LoginFormLabel,LoginFormTitle,LoginInputContainer,} from '@/app/components/auth/AuthStyles';
-import { useState } from 'react';
-import { signUpWithEmail } from '@/app/api/client/auth';
+import Header from "@/app/components/Header/Header";
+import Footer from "@/app/components/Footer/Footer";
+import {
+  CheckboxContainer,
+  CheckBoxLink,
+  CheckBoxText,
+  LoginButton,
+  LoginContainer,
+  LoginForm,
+  LoginFormInput,
+  LoginFormLabel,
+  LoginFormTitle,
+  LoginInputContainer,
+} from "@/app/components/auth/AuthStyles";
+import { useState } from "react";
+import { signUpWithEmail } from "@/app/api/client/auth";
+import styles from "./page.module.scss";
+
 export default function RegistrationPage() {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    password: '',
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
   });
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -22,27 +35,30 @@ export default function RegistrationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
 
     const { name, email, phone, password } = formData;
+
     if (name.trim().length < 2) {
-      setError('Имя должно содержать минимум 2 символа');
+      setError("Имя должно содержать минимум 2 символа");
       return;
     }
-    if (!/^\+?\d{10,15}$/.test(phone.replace(/\s/g, ''))) {
-      setError('Некорректный номер телефона (пример: +79991234567)');
+
+    if (!/^\+?\d{10,15}$/.test(phone.replace(/\s/g, ""))) {
+      setError("Некорректный номер телефона (пример: +79991234567)");
       return;
     }
+
     if (password.length < 6) {
-      setError('Пароль должен содержать минимум 6 символов');
+      setError("Пароль должен содержать минимум 6 символов");
       return;
     }
 
     try {
       const { data, error: authError } = await signUpWithEmail(email, password, {
         name: name.trim(),
-        phone: phone.replace(/\D/g, ''),
+        phone: phone.replace(/\D/g, ""),
       });
 
       if (authError) {
@@ -51,17 +67,17 @@ export default function RegistrationPage() {
       }
 
       if (!data.user) {
-        setError('Не удалось создать пользователя. Попробуйте позже.');
+        setError("Не удалось создать пользователя. Попробуйте позже.");
         return;
       }
 
       setSuccess(
-        'Регистрация успешна! Мы отправили письмо для подтверждения на вашу почту.'
+        "Регистрация успешна. Мы отправили письмо для подтверждения на вашу почту.",
       );
-      setFormData({ name: '', email: '', phone: '', password: '' });
+      setFormData({ name: "", email: "", phone: "", password: "" });
     } catch (err) {
-      console.error('Unexpected error:', err);
-      setError('Произошла неизвестная ошибка. Попробуйте позже.');
+      console.error("Unexpected error:", err);
+      setError("Произошла неизвестная ошибка. Попробуйте позже.");
     }
   };
 
@@ -72,18 +88,10 @@ export default function RegistrationPage() {
         <LoginForm onSubmit={handleSubmit}>
           <LoginFormTitle>Регистрация</LoginFormTitle>
 
-          {error && (
-            <div style={{ color: 'red', marginBottom: '12px', textAlign: 'center' }}>
-              {error}
-            </div>
-          )}
-          {success && (
-            <div style={{ color: 'green', marginBottom: '12px', textAlign: 'center' }}>
-              {success}
-            </div>
-          )}
+          {error && <div className={styles.error}>{error}</div>}
+          {success && <div className={styles.success}>{success}</div>}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '32px' }}>
+          <div className={styles.fields}>
             <LoginInputContainer>
               <LoginFormLabel>Имя</LoginFormLabel>
               <LoginFormInput
@@ -97,7 +105,6 @@ export default function RegistrationPage() {
               />
             </LoginInputContainer>
 
-
             <LoginInputContainer>
               <LoginFormLabel>Электронная почта</LoginFormLabel>
               <LoginFormInput
@@ -109,7 +116,6 @@ export default function RegistrationPage() {
                 placeholder="example@mail.com"
               />
             </LoginInputContainer>
-
 
             <LoginInputContainer>
               <LoginFormLabel>Телефон</LoginFormLabel>
@@ -139,7 +145,7 @@ export default function RegistrationPage() {
             <CheckboxContainer>
               <input type="checkbox" required />
               <CheckBoxText>
-                Я согласен с{' '}
+                Я согласен с{" "}
                 <CheckBoxLink href="/user-agreement">пользовательским соглашением</CheckBoxLink>
               </CheckBoxText>
             </CheckboxContainer>
@@ -147,17 +153,18 @@ export default function RegistrationPage() {
             <CheckboxContainer>
               <input type="checkbox" required />
               <CheckBoxText>
-                Я согласен с{' '}
-                <CheckBoxLink href="/privacy-policy">политикой обработки персональных данных</CheckBoxLink>
+                Я согласен с{" "}
+                <CheckBoxLink href="/privacy-policy">
+                  политикой обработки персональных данных
+                </CheckBoxLink>
               </CheckBoxText>
             </CheckboxContainer>
           </div>
 
           <LoginButton type="submit">Зарегистрироваться</LoginButton>
 
-          <CheckBoxText style={{ marginTop: '20px', textAlign: 'center' }}>
-            Уже есть аккаунт?{' '}
-            <CheckBoxLink href="/login">Войти</CheckBoxLink>
+          <CheckBoxText className={styles.loginHint}>
+            Уже есть аккаунт? <CheckBoxLink href="/login">Войти</CheckBoxLink>
           </CheckBoxText>
         </LoginForm>
       </LoginContainer>

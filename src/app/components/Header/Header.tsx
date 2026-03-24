@@ -10,10 +10,11 @@ import {
   UserButtonLink,
   UserButtons,
   Wrapper,
-} from '@/app/components/Header/HeaderStyles';
-import { useHeaderAuth } from './useHeaderAuth';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+} from "@/app/components/Header/HeaderStyles";
+import { useHeaderAuth } from "./useHeaderAuth";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import styles from "./Header.module.scss";
 
 export default function Header() {
   const router = useRouter();
@@ -22,10 +23,10 @@ export default function Header() {
   const handleLogout = async () => {
     try {
       await logout();
-      router.push('/');
+      router.push("/");
       router.refresh();
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     }
   };
 
@@ -76,28 +77,20 @@ export default function Header() {
           <UserButtons>
             {user ? (
               <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <Link 
+                <div className={styles.userMeta}>
+                  <Link
                     href={user.isAdmin ? "/admin/main" : "/user/account"}
-                    style={{
-                      color: '#333',
-                      textDecoration: 'none',
-                      fontWeight: '500',
-                      fontSize: '16px',
-                    }}
+                    className={styles.accountLink}
                   >
                     {user.isAdmin ? "Админка" : user.name}
                   </Link>
-                  
                 </div>
                 <Link href="/user/cart">
                   <img src="/cart.svg" alt="Cart" />
                 </Link>
               </>
             ) : (
-              <>
-                <UserButtonLink href="/login">Войти</UserButtonLink>
-              </>
+              <UserButtonLink href="/login">Войти</UserButtonLink>
             )}
           </UserButtons>
         </HeaderContent>

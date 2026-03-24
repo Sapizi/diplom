@@ -1,72 +1,27 @@
-import styled from "styled-components";
-import Link from "next/link";
-export const FooterContainer = styled.footer`
-    padding-top: 39px;
-    display: flex;
-    height: 205px;
-    width: 100%;
-    border-top: 1px solid #CDCDCD;
-    margin-top: 20px;
-    
+import styles from "./FooterStyles.module.scss";
+import { createStyledComponent, createStyledLink } from "@/lib/scssComponents";
 
-`
-export const FooterTop = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 956px;
-`
-export const FooterLinks = styled.div`
-    display: flex;
-    gap: 28px;
-`
-export const FooterPhoneAndTime = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: end;
-    
-`
-export const FooterPhone = styled.a`
-    font-size: 20px;
-    font-weight: bold;
-    color: black;
-    transition: 0.1s;
-    &:hover {
-        color: #F99026;
-    }
-`
-export const FooterTime = styled.p`
-    font-size: 15px;
-    font-weight: 400;
-    cursor: pointer;
-`
-export const FooterSocials = styled.div`
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 27px;
-`
-export const FooterBottom = styled.div`
-    display: flex;
-    margin-top: 39px;
-`
-export const FooterLinksBottom = styled.div`
-    display: flex;
-    gap: 21px;
-`
-export const FooterLink = styled(Link)`
-    font-size: 15px;
-    font-weight: 400;
-    color: black;
-    transition: 0.1s;
-    &:hover {
-        color: #F99026;
-    }
-`
-export const SystemsOfPayment = styled.div`
-    display: flex;
-    gap: 15px;
-    margin-left: 500px;
-`
-export const SystemOfPayment = styled.img`
-    
-`
+export const FooterContainer = createStyledComponent(
+  "footer",
+  styles.footerContainer,
+);
+export const FooterTop = createStyledComponent("div", styles.footerTop);
+export const FooterLinks = createStyledComponent("div", styles.footerLinks);
+export const FooterPhoneAndTime = createStyledComponent(
+  "div",
+  styles.footerPhoneAndTime,
+);
+export const FooterPhone = createStyledComponent("a", styles.footerPhone);
+export const FooterTime = createStyledComponent("p", styles.footerTime);
+export const FooterSocials = createStyledComponent("div", styles.footerSocials);
+export const FooterBottom = createStyledComponent("div", styles.footerBottom);
+export const FooterLinksBottom = createStyledComponent(
+  "div",
+  styles.footerLinksBottom,
+);
+export const FooterLink = createStyledLink(styles.footerLink);
+export const SystemsOfPayment = createStyledComponent(
+  "div",
+  styles.systemsOfPayment,
+);
+export const SystemOfPayment = createStyledComponent("img");

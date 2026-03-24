@@ -1,14 +1,28 @@
-"use client"
+"use client";
+
 import Footer from "@/app/components/Footer/Footer";
 import Header from "@/app/components/Header/Header";
 import { Wrapper } from "@/app/components/Header/HeaderStyles";
-import { Avatar, ChangeLink, ImageContainer, Name, Container, Bonus, UserActivity, BonusText, UserGreyBlock, GreyBlockText, GreyBlockP } from "./AccountStyles";
+import {
+  Avatar,
+  Bonus,
+  BonusText,
+  ChangeLink,
+  Container,
+  GreyBlockP,
+  GreyBlockText,
+  ImageContainer,
+  Name,
+  UserActivity,
+  UserGreyBlock,
+} from "./AccountStyles";
 import { useEffect, useState } from "react";
 import { getCurrentUser, signOut } from "@/app/api/client/auth";
 import { fetchProfileSummary } from "@/app/api/client/profiles";
 import { fetchOrdersCountByUser } from "@/app/api/client/orders";
 import { fetchAddressesCountByUser } from "@/app/api/client/addresses";
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next/navigation";
+import styles from "./page.module.scss";
 
 export default function AccountPage() {
   const router = useRouter();
@@ -24,17 +38,18 @@ export default function AccountPage() {
     const fetchUserData = async () => {
       const user = await getCurrentUser();
       if (!user) {
-        console.error("������������ �� �����������");
+        console.error("Пользователь не авторизован");
         return;
       }
+
       const [
         { data: profileData, error: profileError },
         { count: ordersCount, error: ordersError },
-        { count: addressesCount, error: addressesError }
+        { count: addressesCount, error: addressesError },
       ] = await Promise.all([
         fetchProfileSummary(user.id),
         fetchOrdersCountByUser(user.id),
-        fetchAddressesCountByUser(user.id)
+        fetchAddressesCountByUser(user.id),
       ]);
 
       if (profileError) {
@@ -43,28 +58,22 @@ export default function AccountPage() {
       }
 
       setProfile(profileData);
-      if (!ordersError) {
-        setOrderCount(ordersCount || 0);
-      }
-      if (!addressesError) {
-        setAddressCount(addressesCount || 0);
-      }
+      if (!ordersError) setOrderCount(ordersCount || 0);
+      if (!addressesError) setAddressCount(addressesCount || 0);
     };
 
     fetchUserData();
   }, []);
 
-  if (!profile) {
-    return <div>Загрузка</div>;
-  }
+  if (!profile) return <div>Загрузка</div>;
 
   const handleLogout = async () => {
     try {
       await signOut();
-      router.push('/');
+      router.push("/");
       router.refresh();
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
     }
   };
 
@@ -74,20 +83,10 @@ export default function AccountPage() {
       <Wrapper>
         <Container>
           <ImageContainer>
-            <Avatar src={profile.avatar_url || '/default-avatar.svg'} alt="������" />
+            <Avatar src={profile.avatar_url || "/default-avatar.svg"} alt="Аватар" />
             <Name>{profile.name}</Name>
             <ChangeLink href="/user/accountSettings">Редактировать</ChangeLink>
-            <button
-              onClick={handleLogout}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#007bff',
-                cursor: 'pointer',
-                fontSize: '14px',
-                padding: '4px 8px',
-              }}
-            >
+            <button onClick={handleLogout} className={styles.logoutButton}>
               Выйти
             </button>
           </ImageContainer>
@@ -97,12 +96,12 @@ export default function AccountPage() {
               <BonusText>Количество баллов: {profile.bonus_points}</BonusText>
             </Bonus>
 
-            <UserGreyBlock href={'/user/orders'}>
+            <UserGreyBlock href="/user/orders">
               <GreyBlockText>Заказы</GreyBlockText>
               <GreyBlockP>{orderCount}</GreyBlockP>
             </UserGreyBlock>
 
-            <UserGreyBlock href={'/user/adresses'}>
+            <UserGreyBlock href="/user/adresses">
               <GreyBlockText>Адреса</GreyBlockText>
               <GreyBlockP>{addressCount}</GreyBlockP>
             </UserGreyBlock>

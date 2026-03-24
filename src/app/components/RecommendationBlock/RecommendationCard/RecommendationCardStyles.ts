@@ -1,31 +1,11 @@
-import styled from "styled-components";
-export const RecommendationCardMaket = styled.div`
-    display: flex;
-    width: 276px;
-    height: 272px;
-    background-color: #EDEDED;
-    border-radius: 10px;
-    transition: 0.2s;
-    &:hover {
-        border: 3px solid #F99026;
-        cursor: pointer;
-    }
-`
-export const RecCardContent = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin-left: 45px;
-`
-export const RecCardImg = styled.img`
+import styles from "./RecommendationCardStyles.module.scss";
+import { createStyledComponent } from "@/lib/scssComponents";
 
-`
-export const RecCardTitle = styled.h2`
-    font-size: 24px;
-    font-weight: bold;
-    margin-top: 23px;
-`
-export const RecCardText = styled.p`
-    font-size: 16px;
-`
+export const RecommendationCardMaket = createStyledComponent(
+  "div",
+  styles.recommendationCardMaket,
+);
+export const RecCardContent = createStyledComponent("div", styles.recCardContent);
+export const RecCardImg = createStyledComponent("img");
+export const RecCardTitle = createStyledComponent("h2", styles.recCardTitle);
+export const RecCardText = createStyledComponent("p", styles.recCardText);

@@ -1,0 +1,16 @@
+.adminContainer {
+  display: flex;
+  gap: 10px;
+  width: 1460px;
+  margin-top: 20px;
+  margin-bottom: 200px;
+}
+
+.adminBlock {
+  width: 480px;
+  height: 340px;
+  padding: 23px;
+  border-radius: 10px;
+  background-color: #ededed;
+  cursor: pointer;
+}

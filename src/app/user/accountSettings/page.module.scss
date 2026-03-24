@@ -1,0 +1,29 @@
+.errorState {
+  color: red;
+}
+
+.saveButton {
+  margin-top: 8px;
+  padding: 6px 12px;
+}
+
+.avatarPreviewWrapper {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.avatarPreview {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.fileInput {
+  margin-bottom: 8px;
+}
+
+.helpText {
+  color: #666;
+  font-size: 12px;
+}

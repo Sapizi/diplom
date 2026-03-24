@@ -1,13 +1,13 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { fetchMenuItems } from '@/app/api/client/menu'
-import { getCurrentUser } from '@/app/api/client/auth'
-import Header from '@/app/components/Header/Header'
-import Footer from '@/app/components/Footer/Footer'
-import { Wrapper } from '@/app/components/Header/HeaderStyles'
-import { Title } from '@/app/MainPageStyles'
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { fetchMenuItems } from "@/app/api/client/menu";
+import { getCurrentUser } from "@/app/api/client/auth";
+import Header from "@/app/components/Header/Header";
+import Footer from "@/app/components/Footer/Footer";
+import { Wrapper } from "@/app/components/Header/HeaderStyles";
+import { Title } from "@/app/MainPageStyles";
 import {
   Description,
   MenuItem,
@@ -18,105 +18,91 @@ import {
   Price,
   Subtitle,
   TitleBlock,
-} from '../admin/menu/AdminMenuStyles'
-import { SortBlock, SortOption, SortSelect } from './MenuPageStyles'
-import { LoginButton } from '@/app/components/auth/AuthStyles'
+} from "../admin/menu/AdminMenuStyles";
+import { SortBlock, SortOption, SortSelect } from "./MenuPageStyles";
+import { LoginButton } from "@/app/components/auth/AuthStyles";
+import styles from "./page.module.scss";
 
 type MenuItemType = {
-  id: string
-  name: string
-  description: string
-  price: number
-  image_url: string | null
-}
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image_url: string | null;
+};
 
 type CartItemType = {
-  id: string
-  name: string
-  price: number
-  image_url: string | null
-  quantity: number
-}
-const MENU_CACHE_TTL_MS = 5 * 60 * 1000
+  id: string;
+  name: string;
+  price: number;
+  image_url: string | null;
+  quantity: number;
+};
+
+const MENU_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export default function MenuPage() {
-  const router = useRouter()
-  const [menu, setMenu] = useState<MenuItemType[]>([])
-  const [loading, setLoading] = useState(true)
-  const [sort, setSort] = useState<'asc' | 'desc' | ''>('')
-  const [justAddedId, setJustAddedId] = useState<string | null>(null)
-
-  const fetchMenu = async () => {
-    setLoading(true)
-
-    const { data, error } = await fetchMenuItems(sort)
-    if (error) {
-      console.error(error)
-      setLoading(false)
-      return
-    }
-
-    setMenu(data || [])
-    setLoading(false)
-  }
+  const router = useRouter();
+  const [menu, setMenu] = useState<MenuItemType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sort, setSort] = useState<"asc" | "desc" | "">("");
+  const [justAddedId, setJustAddedId] = useState<string | null>(null);
 
   useEffect(() => {
-  let isMounted = true
-  const cacheKey = `menu_cache_${sort || 'default'}`
+    let isMounted = true;
+    const cacheKey = `menu_cache_${sort || "default"}`;
 
-  const cachedRaw = localStorage.getItem(cacheKey)
-  if (cachedRaw) {
-    try {
-      const cached = JSON.parse(cachedRaw) as { ts: number; data: MenuItemType[] }
-      if (Date.now() - cached.ts < MENU_CACHE_TTL_MS) {
-        setMenu(cached.data)
-        setLoading(false)
+    const cachedRaw = localStorage.getItem(cacheKey);
+    if (cachedRaw) {
+      try {
+        const cached = JSON.parse(cachedRaw) as { ts: number; data: MenuItemType[] };
+        if (Date.now() - cached.ts < MENU_CACHE_TTL_MS) {
+          setMenu(cached.data);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.warn("Menu cache parse error", error);
       }
-    } catch (error) {
-      console.warn('Menu cache parse error', error)
-    }
-  }
-
-  const fetchMenu = async () => {
-    const { data, error } = await fetchMenuItems(sort)
-    if (!isMounted) return
-
-    if (error) {
-      console.error(error)
-      setLoading(false)
-      return
     }
 
-    const items = data || []
-    setMenu(items)
-    setLoading(false)
-    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: items }))
-  }
+    const fetchMenu = async () => {
+      const { data, error } = await fetchMenuItems(sort);
+      if (!isMounted) return;
 
-  setLoading(prev => prev && menu.length === 0)
-  fetchMenu()
+      if (error) {
+        console.error(error);
+        setLoading(false);
+        return;
+      }
 
-  return () => {
-    isMounted = false
-  }
-}, [sort])
+      const items = data || [];
+      setMenu(items);
+      setLoading(false);
+      localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: items }));
+    };
 
+    setLoading((prev) => prev && menu.length === 0);
+    fetchMenu();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [sort]);
 
   const addToCart = async (item: MenuItemType) => {
-    const user = await getCurrentUser()
+    const user = await getCurrentUser();
     if (!user) {
-      alert('Нужно войти в аккаунт')
-      router.push('/login')
-      return
+      alert("Нужно войти в аккаунт");
+      router.push("/login");
+      return;
     }
 
-    const cartRaw = localStorage.getItem('cart')
-    const cart: CartItemType[] = cartRaw ? JSON.parse(cartRaw) : []
+    const cartRaw = localStorage.getItem("cart");
+    const cart: CartItemType[] = cartRaw ? JSON.parse(cartRaw) : [];
 
-    const existing = cart.find(c => c.id === item.id)
-
+    const existing = cart.find((cartItem) => cartItem.id === item.id);
     if (existing) {
-      existing.quantity += 1
+      existing.quantity += 1;
     } else {
       cart.push({
         id: item.id,
@@ -124,17 +110,17 @@ export default function MenuPage() {
         price: item.price,
         image_url: item.image_url,
         quantity: 1,
-      })
+      });
     }
 
-    localStorage.setItem('cart', JSON.stringify(cart))
-    setJustAddedId(item.id)
+    localStorage.setItem("cart", JSON.stringify(cart));
+    setJustAddedId(item.id);
     setTimeout(() => {
-      setJustAddedId(prev => (prev === item.id ? null : prev))
-    }, 500)
-  }
+      setJustAddedId((prev) => (prev === item.id ? null : prev));
+    }, 500);
+  };
 
-  if (loading) return <p>Загрузка...</p>
+  if (loading) return <p>Загрузка...</p>;
 
   return (
     <>
@@ -145,7 +131,7 @@ export default function MenuPage() {
         </TitleBlock>
 
         <SortBlock>
-          <SortSelect value={sort} onChange={e => setSort(e.target.value as any)}>
+          <SortSelect value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
             <SortOption value="" disabled>
               Сортировать по
             </SortOption>
@@ -155,12 +141,9 @@ export default function MenuPage() {
         </SortBlock>
 
         <MenuList>
-          {menu.map(item => (
+          {menu.map((item) => (
             <MenuItem key={item.id}>
-              <MenuItemImg
-                src={item.image_url || '/TestRecImg.svg'}
-                alt={item.name}
-              />
+              <MenuItemImg src={item.image_url || "/TestRecImg.svg"} alt={item.name} />
               <MenuItemDesc>
                 <Subtitle>{item.name}</Subtitle>
                 <Description>{item.description}</Description>
@@ -169,11 +152,7 @@ export default function MenuPage() {
               <MenuItemButtons>
                 <LoginButton
                   onClick={() => addToCart(item)}
-                  style={{
-                    boxShadow: justAddedId === item.id ? '0 0 0 3px rgba(249, 144, 38, 0.35)' : 'none',
-                    filter: justAddedId === item.id ? 'brightness(1.05)' : 'none',
-                    transition: 'box-shadow 0.2s ease, filter 0.2s ease',
-                  }}
+                  className={`${styles.addButton} ${justAddedId === item.id ? styles.addButtonActive : ""}`}
                 >
                   В корзину
                 </LoginButton>
@@ -184,5 +163,5 @@ export default function MenuPage() {
       </Wrapper>
       <Footer />
     </>
-  )
+  );
 }

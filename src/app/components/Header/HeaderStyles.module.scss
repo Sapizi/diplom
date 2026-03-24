@@ -1,0 +1,47 @@
+.wrapper {
+  width: 1480px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.headerContainer {
+  display: flex;
+  align-items: center;
+  width: 100vw;
+  height: 100px;
+  border-bottom: 1px solid #c9c9c9;
+}
+
+.headerContent {
+  display: flex;
+}
+
+.socialLinks {
+  display: flex;
+  align-items: center;
+  gap: 42px;
+}
+
+.socialLink {
+  color: black;
+  font-size: 14px;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.logoContainer {
+  margin-left: 343px;
+}
+
+.userButtons {
+  display: flex;
+  align-items: center;
+  gap: 50px;
+  margin-left: 480px;
+}
+
+.userButtonLink {
+  color: black;
+  font-size: 12px;
+  font-weight: 500;
+}
