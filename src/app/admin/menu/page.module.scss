@@ -1,5 +1,6 @@
 .actionsRow {
   display: flex;
+  flex-wrap: wrap;
   gap: 20px;
 }
 
@@ -20,4 +21,15 @@
 
 .deleteButton {
   background-color: red;
+}
+
+@media (max-width: 640px) {
+  .actionsRow {
+    flex-direction: column;
+  }
+
+  .actionButton,
+  .filterControl {
+    width: 100%;
+  }
 }

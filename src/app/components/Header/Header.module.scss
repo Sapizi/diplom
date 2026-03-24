@@ -10,3 +10,15 @@
   font-weight: 500;
   text-decoration: none;
 }
+
+@media (max-width: 640px) {
+  .userMeta {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .accountLink {
+    font-size: 15px;
+    text-align: center;
+  }
+}

@@ -21,3 +21,13 @@
   cursor: pointer;
   font-weight: bold;
 }
+
+@media (max-width: 640px) {
+  .sortBlock {
+    width: 100%;
+  }
+
+  .sortSelect {
+    width: 100%;
+  }
+}

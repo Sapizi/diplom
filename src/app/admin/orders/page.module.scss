@@ -3,7 +3,7 @@
 }
 
 .searchInput {
-  width: 320px;
+  width: min(320px, 100%);
   height: 40px;
   padding: 0 12px;
   border: 1px solid #ddd;
@@ -48,4 +48,22 @@
 
 .orderItem {
   padding-left: 15px;
+}
+
+@media (max-width: 640px) {
+  .searchWrap {
+    width: 100%;
+  }
+
+  .searchInput {
+    width: 100%;
+  }
+
+  .statusRow {
+    flex-wrap: wrap;
+  }
+
+  .statusSelect {
+    width: 100%;
+  }
 }

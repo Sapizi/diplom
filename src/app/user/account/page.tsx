@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
 import Footer from "@/app/components/Footer/Footer";
 import Header from "@/app/components/Header/Header";
 import { Wrapper } from "@/app/components/Header/HeaderStyles";
@@ -16,16 +19,15 @@ import {
   UserActivity,
   UserGreyBlock,
 } from "./AccountStyles";
-import { useEffect, useState } from "react";
 import { getCurrentUser, signOut } from "@/app/api/client/auth";
 import { fetchProfileSummary } from "@/app/api/client/profiles";
 import { fetchOrdersCountByUser } from "@/app/api/client/orders";
 import { fetchAddressesCountByUser } from "@/app/api/client/addresses";
-import { useRouter } from "next/navigation";
 import styles from "./page.module.scss";
 
 export default function AccountPage() {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState<{
     name: string;
     avatar_url: string | null;
@@ -35,10 +37,15 @@ export default function AccountPage() {
   const [addressCount, setAddressCount] = useState(0);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchUserData = async () => {
       const user = await getCurrentUser();
+      if (!isMounted) return;
+
       if (!user) {
-        console.error("Пользователь не авторизован");
+        setIsLoading(false);
+        router.push("/login");
         return;
       }
 
@@ -52,20 +59,26 @@ export default function AccountPage() {
         fetchAddressesCountByUser(user.id),
       ]);
 
+      if (!isMounted) return;
+
       if (profileError) {
         console.error("Profile load error:", profileError);
+        setIsLoading(false);
         return;
       }
 
       setProfile(profileData);
       if (!ordersError) setOrderCount(ordersCount || 0);
       if (!addressesError) setAddressCount(addressesCount || 0);
+      setIsLoading(false);
     };
 
     fetchUserData();
-  }, []);
 
-  if (!profile) return <div>Загрузка</div>;
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
 
   const handleLogout = async () => {
     try {
@@ -76,6 +89,9 @@ export default function AccountPage() {
       console.error("Logout error:", error);
     }
   };
+
+  if (isLoading) return <div>Загрузка</div>;
+  if (!profile) return null;
 
   return (
     <>

@@ -3,13 +3,14 @@
   flex-direction: column;
   align-items: center;
   gap: 9px;
-  width: 280px;
-  height: 304px;
+  width: min(280px, 100%);
+  min-height: 304px;
 }
 
 .avatar {
-  width: 207px;
-  height: 207px;
+  width: min(207px, 100%);
+  height: auto;
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
 }
 
@@ -34,18 +35,22 @@
   flex-direction: column;
   align-items: center;
   margin-top: 33px;
+  width: 100%;
 }
 
 .userActivity {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 26px;
   margin-top: 35px;
+  width: 100%;
 }
 
 .bonus {
-  width: 730px;
-  height: 268px;
+  width: min(730px, 100%);
+  min-height: 268px;
   padding: 23px;
   border-radius: 10px;
   background: linear-gradient(to right, #ffb56b 0%, #ff7f24 48%, #f99026 100%);
@@ -53,19 +58,19 @@
 
 .bonusText {
   color: white;
-  font-size: 36px;
+  font-size: clamp(26px, 4vw, 36px);
   font-weight: 700;
 }
 
 .bonusBalance {
   color: white;
-  font-size: 128px;
+  font-size: clamp(64px, 12vw, 128px);
   font-weight: 750;
 }
 
 .userGreyBlock {
-  width: 339px;
-  height: 268px;
+  width: min(339px, 100%);
+  min-height: 268px;
   padding: 23px;
   border-radius: 10px;
   background-color: #ededed;
@@ -74,12 +79,24 @@
 
 .greyBlockText {
   color: black;
-  font-size: 36px;
+  font-size: clamp(26px, 4vw, 36px);
   font-weight: 700;
 }
 
 .greyBlockP {
   color: black;
-  font-size: 128px;
+  font-size: clamp(64px, 12vw, 128px);
   font-weight: 750;
+}
+
+@media (max-width: 900px) {
+  .userActivity {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bonus,
+  .userGreyBlock {
+    width: 100%;
+  }
 }

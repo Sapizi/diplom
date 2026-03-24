@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
 import { getCurrentUser } from "@/app/api/client/auth";
 import { fetchOrdersWithItemsByUser } from "@/app/api/client/orders";
 
@@ -39,8 +41,10 @@ type OrderType = {
 };
 
 export default function UserOrdersPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState<OrderType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(true);
 
   const resolveStatusKey = (status?: string) => {
     if (!status || status === "paid") return "accepted";
@@ -64,28 +68,42 @@ export default function UserOrdersPage() {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
+    const fetchOrders = async () => {
+      setLoading(true);
+
+      const user = await getCurrentUser();
+      if (!isMounted) return;
+
+      if (!user) {
+        setIsAuthorized(false);
+        setLoading(false);
+        router.push("/login");
+        return;
+      }
+
+      setIsAuthorized(true);
+
+      const { data: ordersData, error } = await fetchOrdersWithItemsByUser(user.id);
+      if (!isMounted) return;
+
+      if (error) {
+        console.error(error);
+        setLoading(false);
+        return;
+      }
+
+      setOrders((ordersData as OrderType[]) || []);
+      setLoading(false);
+    };
+
     fetchOrders();
-  }, []);
 
-  const fetchOrders = async () => {
-    setLoading(true);
-
-    const user = await getCurrentUser();
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    const { data: ordersData, error } = await fetchOrdersWithItemsByUser(user.id);
-    if (error) {
-      console.error(error);
-      setLoading(false);
-      return;
-    }
-
-    setOrders((ordersData as OrderType[]) || []);
-    setLoading(false);
-  };
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
 
   const calcTotal = (items: OrderItemType[]) =>
     items.reduce((sum, item) => {
@@ -93,6 +111,8 @@ export default function UserOrdersPage() {
       const qty = item.quantity ?? 1;
       return sum + price * qty;
     }, 0);
+
+  if (!loading && !isAuthorized) return null;
 
   return (
     <>

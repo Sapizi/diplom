@@ -1,5 +1,8 @@
 'use client';
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
 import Footer from "@/app/components/Footer/Footer";
 import Header from "@/app/components/Header/Header";
 import { Wrapper } from "@/app/components/Header/HeaderStyles";
@@ -7,7 +10,6 @@ import { Container } from "../account/AccountStyles";
 import { Title } from "@/app/MainPageStyles";
 import { ChangeForm } from "./AccountSettingsStyles";
 import { LoginButton, LoginFormInput, LoginFormLabel } from "@/app/components/auth/AuthStyles";
-import { useEffect, useState } from "react";
 import { getCurrentUser } from "@/app/api/client/auth";
 import {
   fetchProfileSettings,
@@ -19,24 +21,33 @@ import {
 import styles from "./page.module.scss";
 
 export default function AccountSettings() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasAccess, setHasAccess] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchProfile = async () => {
       const user = await getCurrentUser();
+      if (!isMounted) return;
+
       if (!user) {
-        setError("Не удалось получить пользователя");
+        setHasAccess(false);
         setLoading(false);
+        router.push("/login");
         return;
       }
 
-      const { data, error } = await fetchProfileSettings(user.id);
-      if (error && error.code !== "PGRST116") {
+      const { data, error: profileError } = await fetchProfileSettings(user.id);
+      if (!isMounted) return;
+
+      if (profileError && profileError.code !== "PGRST116") {
         setError("Ошибка загрузки профиля");
       } else {
         setName(data?.name || "");
@@ -48,7 +59,11 @@ export default function AccountSettings() {
     };
 
     fetchProfile();
-  }, []);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [router]);
 
   const handleUpdate = async (field: string, value: string) => {
     const user = await getCurrentUser();
@@ -57,9 +72,9 @@ export default function AccountSettings() {
       return;
     }
 
-    const { error } = await upsertProfileById(user.id, { [field]: value });
-    if (error) {
-      setError(`Ошибка обновления: ${error.message}`);
+    const { error: updateError } = await upsertProfileById(user.id, { [field]: value });
+    if (updateError) {
+      setError(`Ошибка обновления: ${updateError.message}`);
     } else {
       setError(null);
       alert("Данные успешно обновлены");
@@ -115,6 +130,7 @@ export default function AccountSettings() {
   };
 
   if (loading) return <div>Загрузка...</div>;
+  if (!hasAccess) return null;
   if (error) return <div className={styles.errorState}>{error}</div>;
 
   return (

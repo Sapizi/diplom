@@ -17,3 +17,9 @@
 .ordersLink {
   color: #f99026;
 }
+
+@media (max-width: 640px) {
+  .ordersLinkWrap {
+    margin-bottom: 120px;
+  }
+}

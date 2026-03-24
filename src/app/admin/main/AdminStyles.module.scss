@@ -1,16 +1,25 @@
 .adminContainer {
   display: flex;
   gap: 10px;
-  width: 1460px;
+  width: min(1460px, 100%);
+  flex-wrap: wrap;
   margin-top: 20px;
   margin-bottom: 200px;
 }
 
 .adminBlock {
-  width: 480px;
+  flex: 1 1 320px;
+  width: auto;
   height: 340px;
   padding: 23px;
   border-radius: 10px;
   background-color: #ededed;
   cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .adminBlock {
+    height: auto;
+    min-height: 220px;
+  }
 }

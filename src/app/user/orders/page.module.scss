@@ -21,3 +21,9 @@
 .supportButton {
   margin-top: 10px;
 }
+
+@media (max-width: 640px) {
+  .supportButton {
+    width: 100%;
+  }
+}

@@ -5,3 +5,15 @@
   margin-top: 43px;
   margin-left: 98px;
 }
+
+@media (max-width: 1280px) {
+  .menuBlocksContainer {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .menuBlocksContainer {
+    gap: 40px;
+  }
+}

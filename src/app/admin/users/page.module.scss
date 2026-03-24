@@ -1,5 +1,5 @@
 .searchInput {
-  width: 300px;
+  width: min(300px, 100%);
   margin-bottom: 20px;
 }
 
@@ -8,7 +8,7 @@
 }
 
 .ordersPopup {
-  width: 700px;
+  width: min(700px, calc(100vw - 32px));
   max-height: 80vh;
   overflow-y: auto;
 }
@@ -19,4 +19,11 @@
 
 .orderItem {
   padding-left: 10px;
+}
+
+@media (max-width: 640px) {
+  .searchInput,
+  .ordersPopup {
+    width: min(700px, calc(100vw - 24px));
+  }
 }
