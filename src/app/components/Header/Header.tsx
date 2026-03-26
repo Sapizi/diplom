@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {
   HeaderContainer,
   HeaderContent,
@@ -10,25 +11,12 @@ import {
   UserButtonLink,
   UserButtons,
   Wrapper,
-} from "@/app/components/Header/HeaderStyles";
-import { useHeaderAuth } from "./useHeaderAuth";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import styles from "./Header.module.scss";
+} from '@/app/components/Header/HeaderStyles';
+import { useHeaderAuth } from './useHeaderAuth';
+import styles from './Header.module.scss';
 
 export default function Header() {
-  const router = useRouter();
-  const { user, isLoading, logout } = useHeaderAuth();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      router.push("/");
-      router.refresh();
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
+  const { user, isLoading } = useHeaderAuth();
 
   if (isLoading) {
     return (
@@ -56,6 +44,18 @@ export default function Header() {
     );
   }
 
+  const accountHref = user?.isCourer
+    ? '/courer/main'
+    : user?.isAdmin
+      ? '/admin/main'
+      : '/user/account';
+
+  const accountLabel = user?.isCourer
+    ? user.name
+    : user?.isAdmin
+      ? 'Админка'
+      : user?.name;
+
   return (
     <HeaderContainer>
       <Wrapper>
@@ -78,11 +78,8 @@ export default function Header() {
             {user ? (
               <>
                 <div className={styles.userMeta}>
-                  <Link
-                    href={user.isAdmin ? "/admin/main" : "/user/account"}
-                    className={styles.accountLink}
-                  >
-                    {user.isAdmin ? "Админка" : user.name}
+                  <Link href={accountHref} className={styles.accountLink}>
+                    {accountLabel}
                   </Link>
                 </div>
                 <Link href="/user/cart">

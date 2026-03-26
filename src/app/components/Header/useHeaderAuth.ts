@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { getSession, onAuthStateChange, signOut } from '@/app/api/client/auth';
-import { fetchHeaderProfile } from '@/app/api/client/profiles';
+import { fetchAuthenticatedRoleProfile } from '@/app/api/client/profiles';
 
 interface UserProfile {
   id: string;
   name: string;
   isAdmin: boolean;
+  isCourer: boolean;
 }
 
 interface UseHeaderAuthResult {
@@ -22,35 +23,44 @@ export function useHeaderAuth(): UseHeaderAuthResult {
 
   useEffect(() => {
     const loadUserProfile = async (session: any) => {
-      try {
-        const { data: profile, error } = await fetchHeaderProfile(session.user.id);
+      const fallbackName = session.user.email.split('@')[0] || 'Пользователь';
 
-        if (error || !profile) {
+      try {
+        const { data, error } = await fetchAuthenticatedRoleProfile(session.access_token);
+
+        if (error || !data) {
           setUser({
             id: session.user.id,
-            name: session.user.email.split('@')[0] || 'Пользователь',
+            name: fallbackName,
             isAdmin: false,
+            isCourer: false,
           });
-        } else {
-          setUser({
-            id: session.user.id,
-            name: profile.name || session.user.email.split('@')[0] || 'Пользователь',
-            isAdmin: Boolean(profile.isAdmin),
-          });
+          return;
         }
+
+        setUser({
+          id: data.user.id,
+          name: data.profile?.name || fallbackName,
+          isAdmin: Boolean(data.profile?.isAdmin),
+          isCourer: Boolean(data.profile?.isCourer),
+        });
       } catch (err) {
         console.error('Profile error:', err);
         setUser({
           id: session.user.id,
-          name: session.user.email.split('@')[0] || 'Пользователь',
+          name: fallbackName,
           isAdmin: false,
+          isCourer: false,
         });
       }
     };
 
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await getSession();
+        const {
+          data: { session },
+        } = await getSession();
+
         if (session) {
           await loadUserProfile(session);
         } else {
@@ -64,15 +74,13 @@ export function useHeaderAuth(): UseHeaderAuthResult {
       }
     };
 
-    const { data: authListener } = onAuthStateChange(
-      async (event, session) => {
-        if (session) {
-          await loadUserProfile(session);
-        } else {
-          setUser(null);
-        }
+    const { data: authListener } = onAuthStateChange(async (_event, session) => {
+      if (session) {
+        await loadUserProfile(session);
+      } else {
+        setUser(null);
       }
-    );
+    });
 
     initializeAuth();
 
@@ -91,5 +99,3 @@ export function useHeaderAuth(): UseHeaderAuthResult {
 
   return { user, isLoading, logout };
 }
-
-

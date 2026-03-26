@@ -15,6 +15,21 @@ export type ProfileSettings = {
 export type HeaderProfile = {
   name: string | null;
   isAdmin: boolean | null;
+  isCourer: boolean | null;
+};
+
+export type RoleProfile = {
+  name: string | null;
+  isAdmin: boolean | null;
+  isCourer: boolean | null;
+};
+
+export type AuthenticatedRoleProfile = {
+  user: {
+    id: string;
+    email: string;
+  };
+  profile: RoleProfile | null;
 };
 
 export type AdminUserProfile = {
@@ -29,9 +44,41 @@ export type AdminUserProfile = {
 export async function fetchHeaderProfile(userId: string) {
   return supabase
     .from('profiles')
-    .select('name, "isAdmin"')
+    .select('name, "isAdmin", "isCourer"')
     .eq('id', userId)
     .single();
+}
+
+export async function fetchRoleProfile(userId: string) {
+  return supabase
+    .from('profiles')
+    .select('name, "isAdmin", "isCourer"')
+    .eq('id', userId)
+    .single();
+}
+
+export async function fetchAuthenticatedRoleProfile(accessToken?: string) {
+  const token =
+    accessToken ||
+    (await supabase.auth.getSession()).data.session?.access_token;
+
+  if (!token) {
+    return { data: null, error: new Error('missing_session') };
+  }
+
+  const res = await fetch('/api/auth/profile-role', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    cache: 'no-store',
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return { data: null, error: new Error(data?.error ?? 'profile_role_failed') };
+  }
+
+  return { data: data as AuthenticatedRoleProfile, error: null };
 }
 
 export async function fetchProfileSummary(userId: string) {

@@ -1,7 +1,9 @@
 'use client';
 
-import Header from "@/app/components/Header/Header";
-import Footer from "@/app/components/Footer/Footer";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Header from '@/app/components/Header/Header';
+import Footer from '@/app/components/Footer/Footer';
 import {
   CheckboxContainer,
   CheckBoxLink,
@@ -14,23 +16,22 @@ import {
   LoginFormLabel,
   LoginFormTitle,
   LoginInputContainer,
-} from "@/app/components/auth/AuthStyles";
-import { useState } from "react";
-import { signInWithPassword } from "@/app/api/client/auth";
-import { useRouter } from "next/navigation";
-import styles from "./page.module.scss";
+} from '@/app/components/auth/AuthStyles';
+import { signInWithPassword } from '@/app/api/client/auth';
+import { fetchAuthenticatedRoleProfile } from '@/app/api/client/profiles';
+import styles from './page.module.scss';
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError('');
     setLoading(true);
 
     try {
@@ -41,8 +42,24 @@ export default function Login() {
         return;
       }
 
-      if (data.user) {
-        router.push("/");
+      if (data.user && data.session) {
+        const { data: roleData, error: profileError } = await fetchAuthenticatedRoleProfile(
+          data.session.access_token
+        );
+
+        if (profileError || !roleData) {
+          setError(profileError?.message ?? 'Не удалось определить роль пользователя');
+          return;
+        }
+
+        if (roleData.profile?.isCourer) {
+          router.push('/courer/loading');
+        } else if (roleData.profile?.isAdmin) {
+          router.push('/admin/main');
+        } else {
+          router.push('/');
+        }
+
         router.refresh();
       }
     } finally {
@@ -92,7 +109,7 @@ export default function Login() {
           </div>
 
           <LoginButton type="submit" disabled={loading}>
-            {loading ? "Вход..." : "Войти"}
+            {loading ? 'Вход...' : 'Войти'}
           </LoginButton>
 
           <CheckBoxText className={styles.registrationHint}>

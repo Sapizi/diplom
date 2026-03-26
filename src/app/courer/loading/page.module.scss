@@ -1,0 +1,86 @@
+.page {
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  background: #f8f8f8;
+  overflow: hidden;
+}
+
+.viewport {
+  width: min(100vw, 393px);
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  background: #f8f8f8;
+}
+
+.content {
+  width: 100%;
+  padding-top: 311px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: #323232;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.brand {
+  margin-top: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pepper,
+.pepperAnimated {
+  width: 72px;
+  height: 71px;
+  display: block;
+}
+
+.pepperAnimated {
+  animation: pepperSpin 3.6s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.logo {
+  width: 140px;
+  height: auto;
+  margin-top: 18px;
+}
+
+@keyframes pepperSpin {
+  0%,
+  58%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  68% {
+    transform: rotate(-18deg) scale(1.02);
+  }
+
+  78% {
+    transform: rotate(360deg) scale(1.04);
+  }
+
+  88% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pepperAnimated {
+    animation: none;
+  }
+}
