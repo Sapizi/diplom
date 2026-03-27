@@ -22,6 +22,8 @@ export type RoleProfile = {
   name: string | null;
   isAdmin: boolean | null;
   isCourer: boolean | null;
+  avatar_url: string | null;
+  isOpen: boolean | null;
 };
 
 export type AuthenticatedRoleProfile = {
@@ -52,7 +54,7 @@ export async function fetchHeaderProfile(userId: string) {
 export async function fetchRoleProfile(userId: string) {
   return supabase
     .from('profiles')
-    .select('name, "isAdmin", "isCourer"')
+    .select('name, "isAdmin", "isCourer", avatar_url, "isOpen"')
     .eq('id', userId)
     .single();
 }

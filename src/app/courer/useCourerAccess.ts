@@ -30,6 +30,7 @@ export function useCourerAccess() {
   const router = useRouter();
   const [profile, setProfile] = useState<CourerProfile | null>(null);
   const [isChecking, setIsChecking] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -66,6 +67,8 @@ export function useCourerAccess() {
         name: data?.profile?.name ?? null,
         isAdmin: Boolean(data?.profile?.isAdmin),
         isCourer: Boolean(data?.profile?.isCourer),
+        avatar_url: data?.profile?.avatar_url ?? null,
+        isOpen: data?.profile?.isOpen ?? null,
       });
       setIsChecking(false);
     };
@@ -120,7 +123,11 @@ export function useCourerAccess() {
       isMounted = false;
       authListener.subscription.unsubscribe();
     };
-  }, [router]);
+  }, [router, reloadKey]);
 
-  return { profile, isChecking };
+  return {
+    profile,
+    isChecking,
+    reloadProfile: () => setReloadKey((current) => current + 1),
+  };
 }
