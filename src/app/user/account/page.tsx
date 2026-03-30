@@ -117,7 +117,7 @@ export default function AccountPage() {
               <GreyBlockP>{orderCount}</GreyBlockP>
             </UserGreyBlock>
 
-            <UserGreyBlock href="/user/adresses">
+            <UserGreyBlock href="/user/addresses">
               <GreyBlockText>Адреса</GreyBlockText>
               <GreyBlockP>{addressCount}</GreyBlockP>
             </UserGreyBlock>

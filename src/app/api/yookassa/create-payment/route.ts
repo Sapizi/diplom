@@ -42,16 +42,21 @@ type CartItem = {
 
 export async function POST(req: Request) {
   try {
-    const { amount, cartItems, accessToken, userId } = await req.json()
+    const { amount, cartItems, accessToken, userId, checkout } = await req.json()
 
     if (!accessToken || !userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const totalAmount = Number(amount)
+    const orderType = checkout?.type === 'delivery' ? 'delivery' : 'restaurant'
 
     if (!totalAmount || !Array.isArray(cartItems) || cartItems.length === 0) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
+    }
+
+    if (orderType === 'delivery' && !checkout?.deliveryAddress?.id) {
+      return NextResponse.json({ error: 'Delivery address is required' }, { status: 400 })
     }
 
     const payment = await yooKassa.createPayment(
@@ -72,12 +77,25 @@ export async function POST(req: Request) {
 
     const supabase = createAuthedSupabase(accessToken)
 
+    const deliveryAddress = checkout?.deliveryAddress ?? null
+
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
         user_id: userId,
         status: 'pending',
-        total_amount: totalAmount
+        total_amount: totalAmount,
+        type: orderType,
+        delivery_address_id: orderType === 'delivery' ? deliveryAddress?.id ?? null : null,
+        delivery_city: orderType === 'delivery' ? deliveryAddress?.city ?? null : null,
+        delivery_street: orderType === 'delivery' ? deliveryAddress?.street ?? null : null,
+        delivery_house: orderType === 'delivery' ? deliveryAddress?.house ?? null : null,
+        delivery_entrance: orderType === 'delivery' ? deliveryAddress?.entrance ?? null : null,
+        delivery_apartment: orderType === 'delivery' ? deliveryAddress?.apartment ?? null : null,
+        delivery_floor: orderType === 'delivery' ? deliveryAddress?.floor ?? null : null,
+        delivery_comment: orderType === 'delivery' ? deliveryAddress?.comment ?? null : null,
+        delivery_latitude: orderType === 'delivery' ? deliveryAddress?.latitude ?? null : null,
+        delivery_longitude: orderType === 'delivery' ? deliveryAddress?.longitude ?? null : null
       })
       .select('id')
       .single()

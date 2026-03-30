@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { signOut } from '@/app/api/client/auth';
 import { useCourerAccess } from '../useCourerAccess';
 import styles from './page.module.scss';
 
@@ -79,9 +81,34 @@ function SettingsIcon() {
   );
 }
 
+function LogoutIcon() {
+  return (
+    <svg viewBox="0 0 18 18" aria-hidden="true">
+      <path
+        d="M6.75 2.25H4.5C3.25736 2.25 2.25 3.25736 2.25 4.5V13.5C2.25 14.7426 3.25736 15.75 4.5 15.75H6.75"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.5"
+      />
+      <path
+        d="M10.5 12.75L15 8.99999L10.5 5.24999M15 9H6.75"
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.5"
+      />
+    </svg>
+  );
+}
+
 export default function CourerMainPage() {
+  const router = useRouter();
   const { profile, isChecking, reloadProfile } = useCourerAccess();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const displayName = useMemo(() => {
     const profileName = profile?.name?.trim();
@@ -96,6 +123,23 @@ export default function CourerMainPage() {
 
   const shiftIsOpen = Boolean(profile?.isOpen);
   const shiftStatus = shiftIsOpen ? 'Смена открыта' : 'Смена не открыта';
+
+  const handleLogout = async () => {
+    if (isLoggingOut) {
+      return;
+    }
+
+    setIsLoggingOut(true);
+
+    try {
+      await signOut();
+      router.push('/');
+      router.refresh();
+    } catch (error) {
+      console.error('Logout error:', error);
+      setIsLoggingOut(false);
+    }
+  };
 
   if (isChecking) {
     return (
@@ -175,6 +219,16 @@ export default function CourerMainPage() {
               <SettingsIcon />
               <span>Настройки</span>
             </Link>
+
+            <button
+              type="button"
+              className={`${styles.menuItem} ${styles.logoutButton}`}
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+            >
+              <LogoutIcon />
+              <span>{isLoggingOut ? 'Выходим...' : 'Выйти'}</span>
+            </button>
           </nav>
         </aside>
       </div>

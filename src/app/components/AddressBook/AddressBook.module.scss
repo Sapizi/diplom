@@ -1,0 +1,364 @@
+.addressBook {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  padding: 24px;
+  border-radius: 24px;
+  background: #ededed;
+}
+
+.compact {
+  padding: 18px;
+  border-radius: 20px;
+}
+
+.header,
+.formHeader,
+.cardHeader,
+.cardTop,
+.cardActions,
+.mapSearch,
+.modeSwitch,
+.formActions {
+  display: flex;
+  align-items: center;
+}
+
+.header,
+.formHeader {
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.title,
+.formTitle,
+.cardTitle {
+  color: #252525;
+  line-height: 1.2;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.description,
+.formText,
+.cardDetails,
+.state,
+.emptyText,
+.mapHint,
+.mapStatus,
+.error {
+  color: #666;
+  line-height: 1.45;
+}
+
+.description,
+.formText {
+  margin-top: 6px;
+  font-size: 15px;
+}
+
+.error {
+  color: #d1453b;
+}
+
+.state,
+.emptyState {
+  padding: 24px;
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.emptyTitle {
+  color: #252525;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.emptyText {
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+.list {
+  display: grid;
+  gap: 14px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  background: #ffffff;
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+.cardSelected {
+  border-color: #f99026;
+  transform: translateY(-1px);
+}
+
+.cardTop {
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cardTitle {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.badge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(249, 144, 38, 0.14);
+  color: #d87000;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cardDetails {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.cardActions {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.primaryButton,
+.secondaryButton,
+.ghostButton,
+.dangerButton,
+.closeButton,
+.modeButton {
+  border: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: opacity 0.18s ease, transform 0.18s ease, background 0.18s ease;
+}
+
+.primaryButton,
+.secondaryButton,
+.ghostButton,
+.dangerButton,
+.closeButton {
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.primaryButton {
+  background: #f99026;
+  color: #ffffff;
+}
+
+.secondaryButton {
+  background: #f3eee8;
+  color: #7a4a17;
+}
+
+.secondaryButtonActive {
+  background: rgba(249, 144, 38, 0.18);
+  color: #d87000;
+}
+
+.ghostButton,
+.closeButton {
+  background: #f3f3f3;
+  color: #444;
+}
+
+.dangerButton {
+  background: rgba(209, 69, 59, 0.1);
+  color: #d1453b;
+}
+
+.formCard {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px;
+  border-radius: 22px;
+  background: #ffffff;
+}
+
+.formTitle {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.modeSwitch {
+  gap: 10px;
+}
+
+.modeButton {
+  height: 42px;
+  padding: 0 16px;
+  background: #f5f5f5;
+  color: #555;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.modeButtonActive {
+  background: #252525;
+  color: #ffffff;
+}
+
+.mapTools {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mapSearch {
+  gap: 10px;
+}
+
+.map {
+  width: 100%;
+  height: 280px;
+  min-height: 280px;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.mapPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: #f6f6f6;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.mapHint,
+.mapStatus {
+  font-size: 14px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field span {
+  color: #252525;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.fieldWide {
+  grid-column: span 2;
+}
+
+.fieldFull {
+  grid-column: 1 / -1;
+}
+
+.input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid #dfdfdf;
+  border-radius: 14px;
+  background: #fafafa;
+  color: #252525;
+  font-size: 15px;
+}
+
+.textarea {
+  min-height: 104px;
+  padding-top: 12px;
+  resize: vertical;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #444;
+  font-size: 14px;
+}
+
+.checkboxRow input {
+  width: 18px;
+  height: 18px;
+}
+
+.formActions {
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.ghostButton:disabled,
+.dangerButton:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+@media (max-width: 900px) {
+  .header,
+  .formHeader,
+  .mapSearch,
+  .formActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fieldWide,
+  .fieldFull {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .addressBook,
+  .compact {
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .formTitle,
+  .cardTitle {
+    font-size: 18px;
+  }
+
+  .cardTop,
+  .cardActions {
+    align-items: flex-start;
+  }
+
+  .cardTop {
+    flex-direction: column;
+  }
+}

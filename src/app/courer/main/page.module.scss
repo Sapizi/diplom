@@ -197,3 +197,13 @@
   height: 18px;
   flex: 0 0 auto;
 }
+
+.logoutButton {
+  margin-top: 12px;
+  color: #df3b31;
+}
+
+.logoutButton:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
