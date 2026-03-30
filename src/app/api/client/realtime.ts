@@ -6,6 +6,7 @@ export function subscribeAdminDashboard(onChange: () => void) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, onChange)
     .subscribe();
 
   return () => {

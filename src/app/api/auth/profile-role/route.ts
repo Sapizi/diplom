@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('name, "isAdmin", "isCourer", avatar_url, "isOpen"')
+      .select('name, "isAdmin", "isCourer", "isManager", avatar_url, "isOpen"')
       .eq('id', user.id)
       .maybeSingle();
 

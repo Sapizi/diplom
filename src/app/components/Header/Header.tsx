@@ -46,15 +46,19 @@ export default function Header() {
 
   const accountHref = user?.isCourer
     ? '/courer/main'
-    : user?.isAdmin
-      ? '/admin/main'
-      : '/user/account';
+    : user?.isManager
+      ? '/manager/main'
+      : user?.isAdmin
+        ? '/admin/main'
+        : '/user/account';
 
   const accountLabel = user?.isCourer
     ? user.name
-    : user?.isAdmin
-      ? 'Админка'
-      : user?.name;
+    : user?.isManager
+      ? 'Менеджерская'
+      : user?.isAdmin
+        ? 'Админка'
+        : user?.name;
 
   return (
     <HeaderContainer>

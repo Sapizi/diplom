@@ -54,6 +54,8 @@ export default function Login() {
 
         if (roleData.profile?.isCourer) {
           router.push('/courer/loading');
+        } else if (roleData.profile?.isManager) {
+          router.push('/manager/main');
         } else if (roleData.profile?.isAdmin) {
           router.push('/admin/main');
         } else {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.scss";
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/next';
+import PushNotificationsManager from '@/app/components/PushNotifications/PushNotificationsManager';
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -11,6 +12,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         {children}
+        <PushNotificationsManager />
         <SpeedInsights />
         <Analytics />
       </body>

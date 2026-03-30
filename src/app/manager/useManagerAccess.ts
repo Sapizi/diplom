@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getSession, onAuthStateChange } from '@/app/api/client/auth';
 import { fetchAuthenticatedRoleProfile, type RoleProfile } from '@/app/api/client/profiles';
 
-type CourerProfile = RoleProfile & {
+type ManagerProfile = RoleProfile & {
   id: string;
   email: string;
 };
@@ -15,12 +15,12 @@ function getRedirectPath(profile: RoleProfile | null) {
     return '/';
   }
 
-  if (profile.isCourer) {
+  if (profile.isManager) {
     return null;
   }
 
-  if (profile.isManager) {
-    return '/manager/main';
+  if (profile.isCourer) {
+    return '/courer/main';
   }
 
   if (profile.isAdmin) {
@@ -30,11 +30,10 @@ function getRedirectPath(profile: RoleProfile | null) {
   return '/';
 }
 
-export function useCourerAccess() {
+export function useManagerAccess() {
   const router = useRouter();
-  const [profile, setProfile] = useState<CourerProfile | null>(null);
+  const [profile, setProfile] = useState<ManagerProfile | null>(null);
   const [isChecking, setIsChecking] = useState(true);
-  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -49,7 +48,7 @@ export function useCourerAccess() {
       }
 
       if (error) {
-        console.error('Courer profile load error:', error);
+        console.error('Manager profile load error:', error);
         setProfile(null);
         setIsChecking(false);
         router.replace('/');
@@ -97,7 +96,7 @@ export function useCourerAccess() {
 
         await handleSession(session);
       } catch (error) {
-        console.error('Courer auth init error:', error);
+        console.error('Manager auth init error:', error);
         if (!isMounted) {
           return;
         }
@@ -128,11 +127,10 @@ export function useCourerAccess() {
       isMounted = false;
       authListener.subscription.unsubscribe();
     };
-  }, [router, reloadKey]);
+  }, [router]);
 
   return {
     profile,
     isChecking,
-    reloadProfile: () => setReloadKey((current) => current + 1),
   };
 }

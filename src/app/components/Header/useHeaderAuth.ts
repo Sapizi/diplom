@@ -9,6 +9,7 @@ interface UserProfile {
   name: string;
   isAdmin: boolean;
   isCourer: boolean;
+  isManager: boolean;
 }
 
 interface UseHeaderAuthResult {
@@ -34,6 +35,7 @@ export function useHeaderAuth(): UseHeaderAuthResult {
             name: fallbackName,
             isAdmin: false,
             isCourer: false,
+            isManager: false,
           });
           return;
         }
@@ -43,6 +45,7 @@ export function useHeaderAuth(): UseHeaderAuthResult {
           name: data.profile?.name || fallbackName,
           isAdmin: Boolean(data.profile?.isAdmin),
           isCourer: Boolean(data.profile?.isCourer),
+          isManager: Boolean(data.profile?.isManager),
         });
       } catch (err) {
         console.error('Profile error:', err);
@@ -51,6 +54,7 @@ export function useHeaderAuth(): UseHeaderAuthResult {
           name: fallbackName,
           isAdmin: false,
           isCourer: false,
+          isManager: false,
         });
       }
     };

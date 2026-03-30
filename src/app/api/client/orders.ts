@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase';
+import { getSession } from './auth';
 
 export type OrderDeliveryAddress = {
   id: string | null;
@@ -27,9 +28,14 @@ export type OrderItemType = {
 export type OrderType = {
   id: string;
   created_at: string;
+  updated_at?: string;
   user_id?: string;
   status?: string;
   type?: string;
+  total_amount?: number | null;
+  delivery_started_at?: string | null;
+  delivered_at?: string | null;
+  courier_status?: string | null;
   delivery_address?: OrderDeliveryAddress | null;
   items: OrderItemType[];
 };
@@ -74,9 +80,14 @@ function mapOrder(order: any): OrderType {
   return {
     id: String(order.id),
     created_at: String(order.created_at),
+    updated_at: order.updated_at ? String(order.updated_at) : undefined,
     user_id: order.user_id ? String(order.user_id) : undefined,
     status: order.status ? String(order.status) : undefined,
     type: order.type ? String(order.type) : undefined,
+    total_amount: order.total_amount != null ? Number(order.total_amount) : null,
+    delivery_started_at: order.delivery_started_at ? String(order.delivery_started_at) : null,
+    delivered_at: order.delivered_at ? String(order.delivered_at) : null,
+    courier_status: order.courier_status ? String(order.courier_status) : null,
     delivery_address: mapOrderDeliveryAddress(order),
     items: mapOrderItems(order),
   };
@@ -86,8 +97,13 @@ const ORDERS_SELECT = `
   id,
   user_id,
   created_at,
+  updated_at,
   status,
   type,
+  total_amount,
+  courier_status,
+  delivery_started_at,
+  delivered_at,
   delivery_address_id,
   delivery_city,
   delivery_street,
@@ -140,7 +156,7 @@ export async function fetchOrderItems(orderId: string) {
 export async function fetchAllOrders() {
   return supabase
     .from('orders')
-    .select('id, user_id, created_at, type')
+    .select('id, user_id, created_at, updated_at, type, status, total_amount')
     .order('created_at', { ascending: false });
 }
 
@@ -179,19 +195,30 @@ export async function fetchOrdersCountByUser(userId: string) {
 }
 
 export async function updateOrderStatus(orderId: string, status: string) {
-  const result = await supabase
-    .from('orders')
-    .update({ status })
-    .eq('id', orderId)
-    .select('id, status')
-    .maybeSingle();
+  const {
+    data: { session },
+  } = await getSession();
 
-  if (!result.error && !result.data) {
+  if (!session?.access_token) {
     return {
       data: null,
-      error: new Error('Order update blocked (RLS) or not found'),
+      error: new Error('Missing session'),
     };
   }
 
-  return result;
+  const res = await fetch('/api/orders/update-status', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({ orderId, status }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return { data: null, error: new Error(data?.error ?? 'order_update_failed') };
+  }
+
+  return { data: data?.order ?? null, error: null };
 }

@@ -16,12 +16,14 @@ export type HeaderProfile = {
   name: string | null;
   isAdmin: boolean | null;
   isCourer: boolean | null;
+  isManager: boolean | null;
 };
 
 export type RoleProfile = {
   name: string | null;
   isAdmin: boolean | null;
   isCourer: boolean | null;
+  isManager: boolean | null;
   avatar_url: string | null;
   isOpen: boolean | null;
 };
@@ -46,7 +48,7 @@ export type AdminUserProfile = {
 export async function fetchHeaderProfile(userId: string) {
   return supabase
     .from('profiles')
-    .select('name, "isAdmin", "isCourer"')
+    .select('name, "isAdmin", "isCourer", "isManager"')
     .eq('id', userId)
     .single();
 }
@@ -54,7 +56,7 @@ export async function fetchHeaderProfile(userId: string) {
 export async function fetchRoleProfile(userId: string) {
   return supabase
     .from('profiles')
-    .select('name, "isAdmin", "isCourer", avatar_url, "isOpen"')
+    .select('name, "isAdmin", "isCourer", "isManager", avatar_url, "isOpen"')
     .eq('id', userId)
     .single();
 }
