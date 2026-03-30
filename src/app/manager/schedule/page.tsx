@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signOut } from '@/app/api/client/auth';
 import {
@@ -98,7 +98,7 @@ function formatScheduleDate(value: string) {
   }).format(new Date(`${value}T12:00:00`));
 }
 
-export default function ManagerSchedulePage() {
+function ManagerSchedulePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { profile, isChecking } = useManagerAccess();
@@ -469,5 +469,19 @@ export default function ManagerSchedulePage() {
         )}
       </section>
     </main>
+  );
+}
+
+export default function ManagerSchedulePage() {
+  return (
+    <Suspense
+      fallback={
+        <main className={styles.page}>
+          <div className={styles.loadingState}>Загружаем график...</div>
+        </main>
+      }
+    >
+      <ManagerSchedulePageContent />
+    </Suspense>
   );
 }

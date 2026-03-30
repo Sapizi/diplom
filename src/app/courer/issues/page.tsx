@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import frameStyles from '../courierFrame.module.scss';
 import styles from './page.module.scss';
@@ -11,7 +12,7 @@ const ISSUE_OPTIONS = [
   'Ошибка в заказе',
 ];
 
-export default function CourerIssuesPage() {
+function CourerIssuesPageContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
 
@@ -38,5 +39,21 @@ export default function CourerIssuesPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function CourerIssuesPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className={frameStyles.page}>
+          <div className={frameStyles.viewport}>
+            <div className={frameStyles.loadingState}>Загружаем страницу проблемы...</div>
+          </div>
+        </main>
+      }
+    >
+      <CourerIssuesPageContent />
+    </Suspense>
   );
 }
