@@ -10,7 +10,7 @@ import {
   type OrderDeliveryAddress,
   type OrderType,
 } from '@/app/api/client/orders';
-import { subscribeAdminDashboard } from '@/app/api/client/realtime';
+import { subscribeOrdersFeed } from '@/app/api/client/realtime';
 import { useManagerAccess } from '../useManagerAccess';
 import styles from './page.module.scss';
 
@@ -185,26 +185,11 @@ function getCompletionTime(order: OrderType) {
 }
 
 function getStatusLabel(status?: string) {
-  if (status === 'paid') {
-    return 'Новый';
-  }
-
-  if (status === 'accepted') {
-    return 'Принят';
-  }
-
-  if (status === 'in_progress') {
-    return 'В работе';
-  }
-
-  if (status === 'ready') {
-    return 'Готов';
-  }
-
-  if (status === 'delivered') {
-    return 'Доставлен';
-  }
-
+  if (status === 'paid') return 'Новый';
+  if (status === 'accepted') return 'Принят';
+  if (status === 'in_progress') return 'В работе';
+  if (status === 'ready') return 'Готов';
+  if (status === 'delivered') return 'Доставлен';
   return status || 'Без статуса';
 }
 
@@ -293,10 +278,13 @@ export default function ManagerMainPage() {
     };
 
     loadOrders();
-    const unsubscribe = subscribeAdminDashboard(loadOrders);
+
+    const unsubscribe = subscribeOrdersFeed(loadOrders, `manager-orders-${profile.id}`);
+    const fallbackRefresh = window.setInterval(loadOrders, 4000);
 
     return () => {
       isMounted = false;
+      window.clearInterval(fallbackRefresh);
       unsubscribe();
     };
   }, [profile]);
@@ -313,6 +301,7 @@ export default function ManagerMainPage() {
         ? Math.round(
             completedToday.reduce((total, order) => {
               const completedAt = getCompletionTime(order);
+
               if (!completedAt) {
                 return total;
               }
@@ -422,14 +411,14 @@ export default function ManagerMainPage() {
               <HomeIcon />
               <span>Главная</span>
             </Link>
-            <button type="button" className={styles.navItem} disabled>
+            <Link href="/manager/schedule" className={styles.navItem}>
               <CalendarIcon />
               <span>График</span>
-            </button>
-            <button type="button" className={styles.navItem} disabled>
+            </Link>
+            <Link href="/manager/staff" className={styles.navItem}>
               <StaffIcon />
               <span>Сотрудники</span>
-            </button>
+            </Link>
           </nav>
         </div>
 
@@ -536,9 +525,7 @@ export default function ManagerMainPage() {
                       </div>
 
                       <div className={styles.orderBadges}>
-                        <span className={`${styles.badge} ${styles.typeBadge}`}>
-                          {typeLabel}
-                        </span>
+                        <span className={`${styles.badge} ${styles.typeBadge}`}>{typeLabel}</span>
                         <span className={`${styles.badge} ${getStatusTone(order.status)}`}>
                           {getStatusLabel(order.status)}
                         </span>
@@ -587,7 +574,7 @@ export default function ManagerMainPage() {
                     <div className={styles.itemsRow}>
                       {order.items.map((item) => (
                         <span key={item.id} className={styles.itemChip}>
-                          {item.menu_items?.name ?? 'Позиция'} × {item.quantity ?? 1}
+                          {item.menu_items?.name ?? 'Позиция'} x {item.quantity ?? 1}
                         </span>
                       ))}
                     </div>

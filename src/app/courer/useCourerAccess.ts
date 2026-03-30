@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSession, onAuthStateChange } from '@/app/api/client/auth';
 import { fetchAuthenticatedRoleProfile, type RoleProfile } from '@/app/api/client/profiles';
+import { subscribeCourierProfile } from '@/app/api/client/realtime';
 
 type CourerProfile = RoleProfile & {
   id: string;
@@ -129,6 +130,22 @@ export function useCourerAccess() {
       authListener.subscription.unsubscribe();
     };
   }, [router, reloadKey]);
+
+  useEffect(() => {
+    if (!profile?.id) {
+      return;
+    }
+
+    const unsubscribe = subscribeCourierProfile(
+      profile.id,
+      () => setReloadKey((current) => current + 1),
+      `courier-profile-${profile.id}`
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [profile?.id]);
 
   return {
     profile,
