@@ -10,6 +10,8 @@
   cursor: pointer;
   font-size: 24px;
   text-align: center;
+  text-decoration: none;
+  color: #252525;
   transition: 0.1s;
 
   &:hover {
@@ -20,11 +22,11 @@
 
 .mainNavButtonsContainer {
   display: flex;
-  flex-direction: row;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 26px;
   margin-top: 43px;
-  margin-left: 1px;
+  width: 100%;
 }
 
 @media (max-width: 900px) {

@@ -7,6 +7,7 @@ export function subscribeAdminDashboard(onChange: () => void) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, onChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, onChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'order_reviews' }, onChange)
     .subscribe();
 
   return () => {
@@ -19,6 +20,7 @@ export function subscribeOrdersFeed(onChange: () => void, channelName = 'orders-
     .channel(channelName)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => onChange())
     .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => onChange())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'order_reviews' }, () => onChange())
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         onChange();

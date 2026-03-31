@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from 'react';
 import {
   createMenuItem,
   deleteMenuItem,
@@ -9,14 +8,9 @@ import {
   getMenuImagePublicUrl,
   updateMenuItem,
   uploadMenuImage,
-} from "@/app/api/client/menu";
-import { createCategory, fetchCategories as fetchCategoriesApi } from "@/app/api/client/categories";
-import { getSession, onAuthStateChange } from "@/app/api/client/auth";
-import { getIsAdmin } from "@/app/api/client/profiles";
-import Footer from "@/app/components/Footer/Footer";
-import Header from "@/app/components/Header/Header";
-import { Wrapper } from "@/app/components/Header/HeaderStyles";
-import { Title } from "@/app/MainPageStyles";
+} from '@/app/api/client/menu';
+import { createCategory, fetchCategories as fetchCategoriesApi } from '@/app/api/client/categories';
+import PageLoader from '@/app/components/PageLoader/PageLoader';
 import {
   Description,
   LoginButton,
@@ -38,9 +32,10 @@ import {
   PopupTitle,
   Price,
   Subtitle,
-  TitleBlock,
-} from "./AdminMenuStyles";
-import styles from "./page.module.scss";
+} from './AdminMenuStyles';
+import AdminShell from '@/app/admin/components/AdminShell/AdminShell';
+import { useAdminAccess } from '@/app/admin/useAdminAccess';
+import styles from './page.module.scss';
 
 type MenuItemType = {
   id: string;
@@ -49,6 +44,8 @@ type MenuItemType = {
   price: number;
   image_url: string | null;
   category_id: string;
+  calories?: number | null;
+  is_available?: boolean | null;
 };
 
 type CategoryType = {
@@ -57,27 +54,26 @@ type CategoryType = {
 };
 
 export default function AdminMenuPage() {
-  const router = useRouter();
-
+  const { profile, isChecking } = useAdminAccess();
   const [menu, setMenu] = useState<MenuItemType[]>([]);
-  const [isReady, setIsReady] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [isMenuPopupOpen, setIsMenuPopupOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItemType | null>(null);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [price, setPrice] = useState("");
-  const [categoryId, setCategoryId] = useState("");
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [price, setPrice] = useState('');
+  const [calories, setCalories] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [isAvailable, setIsAvailable] = useState(true);
   const [image, setImage] = useState<File | null>(null);
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
 
   const [isCategoryPopupOpen, setIsCategoryPopupOpen] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryName, setNewCategoryName] = useState('');
 
   const fetchMenu = async () => {
     setLoading(true);
@@ -105,64 +101,7 @@ export default function AdminMenuPage() {
   };
 
   useEffect(() => {
-    let isMounted = true;
-    let unsubscribe: null | (() => void) = null;
-
-    const checkAdmin = async (session: any) => {
-      const { data: profile, error: profileError } = await getIsAdmin(session.user.id);
-
-      if (!isMounted) return;
-
-      if (profileError || !profile?.isAdmin) {
-        setIsChecking(false);
-        router.push("/");
-        return;
-      }
-
-      setIsReady(true);
-      setIsChecking(false);
-    };
-
-    const init = async () => {
-      const {
-        data: { session },
-        error,
-      } = await getSession();
-
-      if (session) {
-        await checkAdmin(session);
-        return;
-      }
-
-      if (error) {
-        setIsChecking(false);
-        router.push("/login");
-        return;
-      }
-
-      const { data: authListener } = onAuthStateChange(async (_event, nextSession) => {
-        if (!isMounted) return;
-        if (nextSession) {
-          await checkAdmin(nextSession);
-        } else {
-          setIsChecking(false);
-          router.push("/login");
-        }
-      });
-
-      unsubscribe = () => authListener.subscription.unsubscribe();
-    };
-
-    init();
-
-    return () => {
-      isMounted = false;
-      if (unsubscribe) unsubscribe();
-    };
-  }, [router]);
-
-  useEffect(() => {
-    if (!isReady) return;
+    if (!profile) return;
 
     const loadInitial = async () => {
       setLoading(true);
@@ -187,10 +126,10 @@ export default function AdminMenuPage() {
     };
 
     loadInitial();
-  }, [isReady]);
+  }, [profile]);
 
   const handleDelete = async (id: string) => {
-    const confirmDelete = confirm("Удалить эту позицию?");
+    const confirmDelete = confirm('Удалить эту позицию?');
     if (!confirmDelete) return;
 
     const { error } = await deleteMenuItem(id);
@@ -205,10 +144,12 @@ export default function AdminMenuPage() {
 
   const openCreateMenuPopup = () => {
     setEditingItem(null);
-    setName("");
-    setDescription("");
-    setPrice("");
-    setCategoryId("");
+    setName('');
+    setDescription('');
+    setPrice('');
+    setCalories('');
+    setCategoryId('');
+    setIsAvailable(true);
     setImage(null);
     setIsMenuPopupOpen(true);
   };
@@ -218,15 +159,17 @@ export default function AdminMenuPage() {
     setName(item.name);
     setDescription(item.description);
     setPrice(item.price.toString());
+    setCalories(item.calories != null ? item.calories.toString() : '');
     setCategoryId(item.category_id);
+    setIsAvailable(item.is_available !== false);
     setImage(null);
     setIsMenuPopupOpen(true);
   };
 
   const handleSaveMenu = async () => {
-    const resolvedCategoryId = categoryId || editingItem?.category_id || "";
+    const resolvedCategoryId = categoryId || editingItem?.category_id || '';
     if (!name || !price || !resolvedCategoryId) {
-      alert("Заполните все поля");
+      alert('Заполните все обязательные поля');
       return;
     }
 
@@ -237,21 +180,26 @@ export default function AdminMenuPage() {
       const { error: uploadError } = await uploadMenuImage(fileName, image);
       if (uploadError) {
         console.error(uploadError);
-        alert("Ошибка загрузки картинки");
+        alert('Ошибка загрузки картинки');
         return;
       }
+
       const { data } = getMenuImagePublicUrl(fileName);
       imageUrl = data.publicUrl;
     }
 
+    const payload = {
+      name,
+      description,
+      price: Number(price),
+      calories: calories.trim() ? Number(calories) : null,
+      category_id: resolvedCategoryId,
+      image_url: imageUrl,
+      is_available: isAvailable,
+    };
+
     if (editingItem) {
-      const { error } = await updateMenuItem(editingItem.id, {
-        name,
-        description,
-        price: Number(price),
-        category_id: resolvedCategoryId,
-        image_url: imageUrl,
-      });
+      const { error } = await updateMenuItem(editingItem.id, payload);
 
       if (error) {
         console.error(error);
@@ -259,13 +207,7 @@ export default function AdminMenuPage() {
         return;
       }
     } else {
-      const { error } = await createMenuItem({
-        name,
-        description,
-        price: Number(price),
-        category_id: resolvedCategoryId,
-        image_url: imageUrl,
-      });
+      const { error } = await createMenuItem(payload);
 
       if (error) {
         console.error(error);
@@ -276,22 +218,24 @@ export default function AdminMenuPage() {
 
     setIsMenuPopupOpen(false);
     setEditingItem(null);
-    setName("");
-    setDescription("");
-    setPrice("");
-    setCategoryId("");
+    setName('');
+    setDescription('');
+    setPrice('');
+    setCalories('');
+    setCategoryId('');
+    setIsAvailable(true);
     setImage(null);
     fetchMenu();
   };
 
   const openCategoryPopup = () => {
-    setNewCategoryName("");
+    setNewCategoryName('');
     setIsCategoryPopupOpen(true);
   };
 
   const handleCreateCategory = async () => {
     if (!newCategoryName.trim()) {
-      alert("Введите название категории");
+      alert('Введите название категории');
       return;
     }
 
@@ -306,30 +250,46 @@ export default function AdminMenuPage() {
     setIsCategoryPopupOpen(false);
   };
 
-  const filteredMenu = menu.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter ? item.category_id === categoryFilter : true;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredMenu = useMemo(
+    () =>
+      menu.filter((item) => {
+        const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = categoryFilter ? item.category_id === categoryFilter : true;
+        return matchesSearch && matchesCategory;
+      }),
+    [categoryFilter, menu, searchTerm]
+  );
 
-  if (isChecking) return <p>Loading...</p>;
-  if (loading) return <p>Loading...</p>;
+  if (isChecking) return <PageLoader label="Проверяем доступ..." />;
+  if (!profile) return null;
+  if (loading) return <PageLoader label="Загружаем меню..." />;
 
   return (
-    <>
-      <Header />
-      <Wrapper>
-        <TitleBlock>
-          <Title>Редактирование меню</Title>
-          <div className={styles.actionsRow}>
-            <LoginButton className={styles.actionButton} onClick={openCreateMenuPopup}>
-              Создать новую позицию
-            </LoginButton>
-            <LoginButton className={styles.actionButton} onClick={openCategoryPopup}>
-              Создать новую категорию
-            </LoginButton>
+    <AdminShell
+      profile={profile}
+      active="menu"
+      title="Меню"
+      subtitle="Управление позициями, категориями, калориями и доступностью блюд."
+      actions={
+        <>
+          <button type="button" className={styles.primaryAction} onClick={openCreateMenuPopup}>
+            Добавить позицию
+          </button>
+          <button type="button" className={styles.secondaryAction} onClick={openCategoryPopup}>
+            Добавить категорию
+          </button>
+        </>
+      }
+    >
+      <section className={styles.panel}>
+        <div className={styles.panelHeader}>
+          <div>
+            <p className={styles.panelEyebrow}>Редактор меню</p>
+            <h2 className={styles.panelTitle}>Позиции и фильтры</h2>
           </div>
-        </TitleBlock>
+
+          <span className={styles.panelMeta}>{filteredMenu.length} позиций</span>
+        </div>
 
         <div className={styles.filters}>
           <PopupInput
@@ -360,6 +320,14 @@ export default function AdminMenuPage() {
                 <Subtitle>{item.name}</Subtitle>
                 <Description>{item.description}</Description>
                 <Price>{item.price} ₽</Price>
+                <Description>
+                  {item.calories != null ? `${item.calories} ккал` : "Калории не указаны"}
+                </Description>
+                <Description
+                  className={item.is_available === false ? styles.unavailableText : styles.availableText}
+                >
+                  {item.is_available === false ? "Нет в наличии" : "В наличии"}
+                </Description>
               </MenuItemDesc>
               <MenuItemButtons>
                 <LoginButton onClick={() => openEditMenuPopup(item)}>Редактировать</LoginButton>
@@ -370,9 +338,7 @@ export default function AdminMenuPage() {
             </MenuItem>
           ))}
         </MenuList>
-      </Wrapper>
-
-      <Footer />
+      </section>
 
       {isMenuPopupOpen && (
         <PopupOverlay>
@@ -400,6 +366,12 @@ export default function AdminMenuPage() {
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
               />
+              <PopupInput
+                type="number"
+                placeholder="Калории"
+                value={calories}
+                onChange={(e) => setCalories(e.target.value)}
+              />
               <PopupSelect value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
                 <option value="">Категория</option>
                 {categories.map((cat) => (
@@ -408,6 +380,14 @@ export default function AdminMenuPage() {
                   </option>
                 ))}
               </PopupSelect>
+              <label className={styles.availabilityToggle}>
+                <input
+                  type="checkbox"
+                  checked={isAvailable}
+                  onChange={(e) => setIsAvailable(e.target.checked)}
+                />
+                <span>Доступно для заказа</span>
+              </label>
               <PopupButtons>
                 <PopupCancelButton onClick={() => setIsMenuPopupOpen(false)}>
                   Отмена
@@ -443,6 +423,6 @@ export default function AdminMenuPage() {
           </PopupContainer>
         </PopupOverlay>
       )}
-    </>
+    </AdminShell>
   );
 }

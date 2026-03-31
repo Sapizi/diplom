@@ -9,6 +9,33 @@ export type ManagerEmployee = {
   isOpen: boolean | null;
 };
 
+export type ManagerEmployeeProfileOrder = {
+  id: string;
+  created_at: string;
+  delivered_at: string | null;
+  total_amount: number | null;
+  street: string | null;
+  house: string | null;
+  customer_name: string | null;
+  customer_phone: string | null;
+  rating: number | null;
+  review_comment: string | null;
+};
+
+export type ManagerEmployeeProfile = {
+  employee: ManagerEmployee & {
+    created_at: string | null;
+  };
+  stats: {
+    deliveredTotal: number;
+    deliveredThisMonth: number;
+    workedMinutesThisMonth: number;
+    averageRating: number | null;
+    ratingsCount: number;
+  };
+  recentOrders: ManagerEmployeeProfileOrder[];
+};
+
 export type ManagerShift = {
   id: string;
   employee_id: string;
@@ -57,6 +84,65 @@ export async function fetchManagerEmployees() {
       avatar_url: employee.avatar_url ? String(employee.avatar_url) : null,
       isOpen: employee.isOpen ?? null,
     })) as ManagerEmployee[],
+    error: null,
+  };
+}
+
+export async function fetchManagerEmployeeProfile(employeeId: string) {
+  const token = await getAccessToken();
+
+  if (!token) {
+    return { data: null, error: new Error('missing_session') };
+  }
+
+  const res = await fetch(`/api/manager/employees/${encodeURIComponent(employeeId)}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    cache: 'no-store',
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return { data: null, error: new Error(data?.error ?? 'manager_employee_profile_failed') };
+  }
+
+  const employee = data?.employee;
+
+  return {
+    data: employee
+      ? ({
+          employee: {
+            id: String(employee.id),
+            name: employee.name ? String(employee.name) : null,
+            email: employee.email ? String(employee.email) : null,
+            phone: employee.phone ? String(employee.phone) : null,
+            avatar_url: employee.avatar_url ? String(employee.avatar_url) : null,
+            isOpen: employee.isOpen ?? null,
+            created_at: employee.created_at ? String(employee.created_at) : null,
+          },
+          stats: {
+            deliveredTotal: Number(data?.stats?.deliveredTotal ?? 0),
+            deliveredThisMonth: Number(data?.stats?.deliveredThisMonth ?? 0),
+            workedMinutesThisMonth: Number(data?.stats?.workedMinutesThisMonth ?? 0),
+            averageRating:
+              data?.stats?.averageRating == null ? null : Number(data.stats.averageRating),
+            ratingsCount: Number(data?.stats?.ratingsCount ?? 0),
+          },
+          recentOrders: ((data?.recentOrders ?? []) as any[]).map((order) => ({
+            id: String(order.id),
+            created_at: String(order.created_at),
+            delivered_at: order.delivered_at ? String(order.delivered_at) : null,
+            total_amount: order.total_amount == null ? null : Number(order.total_amount),
+            street: order.street ? String(order.street) : null,
+            house: order.house ? String(order.house) : null,
+            customer_name: order.customer_name ? String(order.customer_name) : null,
+            customer_phone: order.customer_phone ? String(order.customer_phone) : null,
+            rating: order.rating == null ? null : Number(order.rating),
+            review_comment: order.review_comment ? String(order.review_comment) : null,
+          })),
+        } satisfies ManagerEmployeeProfile)
+      : null,
     error: null,
   };
 }

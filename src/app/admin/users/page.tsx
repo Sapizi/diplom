@@ -1,50 +1,23 @@
 'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from 'react';
 import {
+  createUserByAdmin,
   deleteProfileById,
   fetchAdminUsers,
   getAvatarPublicUrl,
-  getIsAdmin,
+  type AdminUserProfile,
   updateProfileByIdAdmin,
   uploadAvatar,
-} from "@/app/api/client/profiles";
-import { fetchOrdersWithItemsByUser } from "@/app/api/client/orders";
-import { getSession, onAuthStateChange } from "@/app/api/client/auth";
-import Footer from "@/app/components/Footer/Footer";
-import Header from "@/app/components/Header/Header";
-import { Wrapper } from "@/app/components/Header/HeaderStyles";
-import {
-  Description,
-  LoginButton,
-  MenuItem,
-  MenuItemButtons,
-  MenuItemDesc,
-  MenuItemImg,
-  MenuList,
-  PopupButtons,
-  PopupCancelButton,
-  PopupContainer,
-  PopupForm,
-  PopupInput,
-  PopupOverlay,
-  PopupSaveButton,
-  PopupTitle,
-  Subtitle,
-  TitleBlock,
-} from "../menu/AdminMenuStyles";
-import { Title } from "@/app/MainPageStyles";
-import styles from "./page.module.scss";
+} from '@/app/api/client/profiles';
+import { fetchOrdersWithItemsByUser } from '@/app/api/client/orders';
+import { subscribeAdminDashboard } from '@/app/api/client/realtime';
+import PageLoader from '@/app/components/PageLoader/PageLoader';
+import AdminShell from '@/app/admin/components/AdminShell/AdminShell';
+import { useAdminAccess } from '@/app/admin/useAdminAccess';
+import styles from './page.module.scss';
 
-type UserType = {
-  id: string;
-  name: string | null;
-  email: string | null;
-  avatar_url: string | null;
-  bonus_points: number;
-  created_at: string | null;
-};
+type UserRole = 'user' | 'manager' | 'courier' | 'admin';
 
 type OrderItemType = {
   id: string;
@@ -63,282 +36,608 @@ type OrderType = {
   items: OrderItemType[];
 };
 
-export default function UsersList() {
-  const router = useRouter();
-  const [users, setUsers] = useState<UserType[]>([]);
-  const [isReady, setIsReady] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+function getUserRole(user: AdminUserProfile): UserRole {
+  if (user.isAdmin) {
+    return 'admin';
+  }
 
-  const [isEditOpen, setIsEditOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserType | null>(null);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [bonusPoints, setBonusPoints] = useState("");
+  if (user.isManager) {
+    return 'manager';
+  }
+
+  if (user.isCourer) {
+    return 'courier';
+  }
+
+  return 'user';
+}
+
+function getRoleLabel(role: UserRole) {
+  if (role === 'admin') return 'Администратор';
+  if (role === 'manager') return 'Менеджер';
+  if (role === 'courier') return 'Курьер';
+  return 'Пользователь';
+}
+
+function formatDate(value: string | null) {
+  if (!value) {
+    return 'Не указана';
+  }
+
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(value));
+}
+
+function getOrderTotal(order: OrderType) {
+  return order.items.reduce((total, item) => {
+    const price = item.price_at_time ?? item.menu_items?.price ?? 0;
+    return total + price * (item.quantity ?? 1);
+  }, 0);
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('ru-RU', {
+    style: 'currency',
+    currency: 'RUB',
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+const EMPTY_FORM = {
+  name: '',
+  email: '',
+  phone: '',
+  password: '',
+  bonusPoints: '0',
+  role: 'user' as UserRole,
+};
+
+export default function AdminUsersPage() {
+  const { profile, isChecking } = useAdminAccess();
+  const [users, setUsers] = useState<AdminUserProfile[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [modalMode, setModalMode] = useState<'create' | 'edit' | null>(null);
+  const [editingUser, setEditingUser] = useState<AdminUserProfile | null>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
   const [avatar, setAvatar] = useState<File | null>(null);
-
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [ordersPopupOpen, setOrdersPopupOpen] = useState(false);
   const [currentOrders, setCurrentOrders] = useState<OrderType[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
 
-  const fetchUsers = async () => {
-    setLoading(true);
-
-    const { data, error } = await fetchAdminUsers();
-    if (error) {
-      console.error(error);
-      setLoading(false);
+  useEffect(() => {
+    if (!profile) {
       return;
     }
 
-    setUsers(
-      (data || []).map((user) => ({
-        ...user,
-        bonus_points: user.bonus_points || 0,
-      })),
-    );
-    setLoading(false);
-  };
-
-  useEffect(() => {
     let isMounted = true;
-    let unsubscribe: null | (() => void) = null;
 
-    const checkAdmin = async (session: any) => {
-      const { data: profile, error: profileError } = await getIsAdmin(session.user.id);
+    const loadUsers = async () => {
+      const { data, error } = await fetchAdminUsers();
 
-      if (!isMounted) return;
-
-      if (profileError || !profile?.isAdmin) {
-        setIsChecking(false);
-        router.push("/");
-        return;
-      }
-
-      setIsReady(true);
-      setIsChecking(false);
-    };
-
-    const init = async () => {
-      const {
-        data: { session },
-        error,
-      } = await getSession();
-
-      if (session) {
-        await checkAdmin(session);
+      if (!isMounted) {
         return;
       }
 
       if (error) {
-        setIsChecking(false);
-        router.push("/login");
+        console.error('Admin users load error:', error);
+        setIsLoadingUsers(false);
         return;
       }
 
-      const { data: authListener } = onAuthStateChange(async (_event, nextSession) => {
-        if (!isMounted) return;
-        if (nextSession) {
-          await checkAdmin(nextSession);
-        } else {
-          setIsChecking(false);
-          router.push("/login");
-        }
-      });
-
-      unsubscribe = () => authListener.subscription.unsubscribe();
+      setUsers(
+        (data ?? []).map((user) => ({
+          ...user,
+          phone: user.phone ?? null,
+          bonus_points: user.bonus_points ?? 0,
+          isOpen: user.isOpen ?? null,
+          isAdmin: user.isAdmin ?? null,
+          isCourer: user.isCourer ?? null,
+          isManager: user.isManager ?? null,
+        }))
+      );
+      setIsLoadingUsers(false);
     };
 
-    init();
+    loadUsers();
+    const unsubscribe = subscribeAdminDashboard(loadUsers);
 
     return () => {
       isMounted = false;
-      if (unsubscribe) unsubscribe();
+      unsubscribe();
     };
-  }, [router]);
+  }, [profile]);
 
-  useEffect(() => {
-    if (!isReady) return;
-    fetchUsers();
-  }, [isReady]);
+  const stats = useMemo(() => {
+    const employees = users.filter((user) => user.isManager || user.isCourer);
+    const managers = users.filter((user) => user.isManager);
+    const couriers = users.filter((user) => user.isCourer);
+    const onShift = employees.filter((user) => user.isOpen);
 
-  const openEditPopup = (user: UserType) => {
-    setEditingUser(user);
-    setName(user.name || "");
-    setEmail(user.email || "");
-    setBonusPoints(user.bonus_points.toString());
+    return {
+      totalUsers: users.length,
+      employees: employees.length,
+      managers: managers.length,
+      couriers: couriers.length,
+      onShift: onShift.length,
+    };
+  }, [users]);
+
+  const filteredUsers = useMemo(() => {
+    const normalizedQuery = searchTerm.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      return users;
+    }
+
+    return users.filter((user) =>
+      [
+        user.id,
+        user.name,
+        user.email,
+        user.phone,
+        getRoleLabel(getUserRole(user)),
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(normalizedQuery)
+    );
+  }, [searchTerm, users]);
+
+  const resetForm = () => {
+    setForm(EMPTY_FORM);
     setAvatar(null);
-    setIsEditOpen(true);
+    setEditingUser(null);
+    setModalMode(null);
+  };
+
+  const openCreateModal = () => {
+    setForm(EMPTY_FORM);
+    setAvatar(null);
+    setEditingUser(null);
+    setModalMode('create');
+  };
+
+  const openEditModal = (user: AdminUserProfile) => {
+    setEditingUser(user);
+    setForm({
+      name: user.name ?? '',
+      email: user.email ?? '',
+      phone: user.phone ?? '',
+      password: '',
+      bonusPoints: String(user.bonus_points ?? 0),
+      role: getUserRole(user),
+    });
+    setAvatar(null);
+    setModalMode('edit');
   };
 
   const handleSave = async () => {
-    if (!editingUser) return;
+    if (isSaving) {
+      return;
+    }
 
-    let avatarUrl = editingUser.avatar_url;
+    if (!form.name.trim() || !form.email.trim()) {
+      alert('Заполните имя и email');
+      return;
+    }
 
-    if (avatar) {
-      const fileName = `${Date.now()}-${avatar.name}`;
-      const { error: uploadError } = await uploadAvatar(fileName, avatar);
+    if (modalMode === 'create' && form.password.trim().length < 6) {
+      alert('Пароль должен быть не короче 6 символов');
+      return;
+    }
 
-      if (uploadError) {
-        alert("Ошибка загрузки аватара");
+    setIsSaving(true);
+
+    try {
+      if (modalMode === 'create') {
+        const { error } = await createUserByAdmin({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim() || null,
+          password: form.password,
+          role: form.role === 'admin' ? 'user' : form.role,
+        });
+
+        if (error) {
+          alert(error.message);
+          return;
+        }
+      } else if (modalMode === 'edit' && editingUser) {
+        let avatarUrl = editingUser.avatar_url;
+
+        if (avatar) {
+          const fileName = `${Date.now()}-${avatar.name}`;
+          const { error: uploadError } = await uploadAvatar(fileName, avatar);
+
+          if (uploadError) {
+            alert('Ошибка загрузки аватара');
+            return;
+          }
+
+          const { data } = getAvatarPublicUrl(fileName);
+          avatarUrl = data.publicUrl;
+        }
+
+        const role = form.role === 'admin' ? 'admin' : form.role;
+        const { error } = await updateProfileByIdAdmin(editingUser.id, {
+          name: form.name.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim() || null,
+          bonus_points: Number(form.bonusPoints || 0),
+          avatar_url: avatarUrl,
+          isAdmin: role === 'admin',
+          isManager: role === 'manager',
+          isCourer: role === 'courier',
+        });
+
+        if (error) {
+          alert(error.message);
+          return;
+        }
+      }
+
+      const { data, error } = await fetchAdminUsers();
+      if (error) {
+        console.error('Admin users reload error:', error);
+      } else {
+        setUsers((data ?? []) as AdminUserProfile[]);
+      }
+
+      resetForm();
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (userId: string) => {
+    if (isDeletingId) {
+      return;
+    }
+
+    if (!confirm('Удалить пользователя?')) {
+      return;
+    }
+
+    setIsDeletingId(userId);
+
+    try {
+      const { error } = await deleteProfileById(userId);
+      if (error) {
+        alert(error.message);
         return;
       }
 
-      const { data } = getAvatarPublicUrl(fileName);
-      avatarUrl = data.publicUrl;
+      setUsers((prev) => prev.filter((user) => user.id !== userId));
+    } finally {
+      setIsDeletingId(null);
     }
-
-    const { error } = await updateProfileByIdAdmin(editingUser.id, {
-      name,
-      email,
-      bonus_points: Number(bonusPoints),
-      avatar_url: avatarUrl,
-    });
-
-    if (error) {
-      console.error(error);
-      alert(error.message);
-      return;
-    }
-
-    setIsEditOpen(false);
-    setEditingUser(null);
-    fetchUsers();
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Удалить пользователя?")) return;
-
-    const { error } = await deleteProfileById(id);
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    setUsers((prev) => prev.filter((user) => user.id !== id));
   };
 
   const openOrdersPopup = async (userId: string) => {
     setOrdersLoading(true);
+    setOrdersPopupOpen(true);
 
-    const { data: ordersData, error } = await fetchOrdersWithItemsByUser(userId);
+    const { data, error } = await fetchOrdersWithItemsByUser(userId);
     if (error) {
-      alert("Ошибка загрузки заказов");
+      alert('Ошибка загрузки заказов');
+      setCurrentOrders([]);
       setOrdersLoading(false);
       return;
     }
 
-    setCurrentOrders((ordersData as OrderType[]) || []);
-    setOrdersPopupOpen(true);
+    setCurrentOrders((data as OrderType[]) ?? []);
     setOrdersLoading(false);
   };
 
-  const filteredUsers = users.filter((user) =>
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  if (isChecking) {
+    return <PageLoader label="Проверяем доступ администратора..." />;
+  }
 
-  if (isChecking) return <p>Loading...</p>;
-  if (loading) return <p>Loading...</p>;
+  if (!profile) {
+    return null;
+  }
 
   return (
-    <>
-      <Header />
-      <Wrapper>
-        <TitleBlock>
-          <Title>Список пользователей</Title>
-          <PopupInput
-            placeholder="Поиск по имени"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={styles.searchInput}
-          />
-        </TitleBlock>
+    <AdminShell
+      profile={profile}
+      active="users"
+      title="Пользователи и сотрудники"
+      subtitle="Ручное создание аккаунтов, назначение ролей менеджера или курьера и быстрый доступ к истории заказов."
+      actions={
+        <button type="button" className={styles.primaryAction} onClick={openCreateModal}>
+          Добавить пользователя
+        </button>
+      }
+    >
+      <section className={styles.metrics}>
+        <article className={styles.metricCard}>
+          <p className={styles.metricLabel}>Всего пользователей</p>
+          <p className={styles.metricValue}>{stats.totalUsers}</p>
+          <p className={styles.metricHint}>Все аккаунты в системе</p>
+        </article>
 
-        <MenuList>
-          {filteredUsers.map((user) => (
-            <MenuItem key={user.id}>
-              <MenuItemImg src={user.avatar_url || "/default-avatar.svg"} alt={user.name || "Avatar"} />
-              <MenuItemDesc>
-                <Subtitle>{user.name || "-"}</Subtitle>
-                <Description>Баллы: {user.bonus_points}</Description>
-                <Description>Дата регистрации: {user.created_at?.split("T")[0]}</Description>
-                <Description>Почта: {user.email || "-"}</Description>
-              </MenuItemDesc>
-              <MenuItemButtons>
-                <LoginButton onClick={() => openOrdersPopup(user.id)}>Заказы</LoginButton>
-                <LoginButton onClick={() => openEditPopup(user)}>Редактировать</LoginButton>
-                <LoginButton className={styles.deleteButton} onClick={() => handleDelete(user.id)}>
-                  Удалить
-                </LoginButton>
-              </MenuItemButtons>
-            </MenuItem>
-          ))}
-        </MenuList>
-      </Wrapper>
+        <article className={styles.metricCard}>
+          <p className={styles.metricLabel}>Сотрудников</p>
+          <p className={styles.metricValue}>{stats.employees}</p>
+          <p className={styles.metricHint}>Менеджеры и курьеры</p>
+        </article>
 
-      {isEditOpen && (
-        <PopupOverlay>
-          <PopupContainer>
-            <PopupTitle>Редактировать пользователя</PopupTitle>
-            <PopupForm>
-              <PopupInput type="file" onChange={(e) => setAvatar(e.target.files?.[0] || null)} />
-              <PopupInput value={name} onChange={(e) => setName(e.target.value)} placeholder="Имя" />
-              <PopupInput value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Почта" />
-              <PopupInput
-                type="number"
-                value={bonusPoints}
-                onChange={(e) => setBonusPoints(e.target.value)}
-                placeholder="Баллы"
-              />
-              <PopupButtons>
-                <PopupCancelButton onClick={() => setIsEditOpen(false)}>Отмена</PopupCancelButton>
-                <PopupSaveButton onClick={handleSave}>Сохранить</PopupSaveButton>
-              </PopupButtons>
-            </PopupForm>
-          </PopupContainer>
-        </PopupOverlay>
-      )}
+        <article className={styles.metricCard}>
+          <p className={styles.metricLabel}>Менеджеров</p>
+          <p className={styles.metricValue}>{stats.managers}</p>
+          <p className={styles.metricHint}>Доступ к менеджерской панели</p>
+        </article>
 
-      {ordersPopupOpen && (
-        <PopupOverlay>
-          <PopupContainer className={styles.ordersPopup}>
-            <PopupTitle>Заказы пользователя</PopupTitle>
+        <article className={styles.metricCard}>
+          <p className={styles.metricLabel}>Курьеров</p>
+          <p className={styles.metricValue}>{stats.couriers}</p>
+          <p className={styles.metricHint}>{stats.onShift} сейчас на смене</p>
+        </article>
+      </section>
+
+      <section className={styles.panel}>
+        <div className={styles.panelHeader}>
+          <div>
+            <p className={styles.panelEyebrow}>Список аккаунтов</p>
+            <h2 className={styles.panelTitle}>Поиск и управление пользователями</h2>
+          </div>
+
+          <label className={styles.searchField}>
+            <span className={styles.searchLabel}>Поиск</span>
+            <input
+              type="search"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              placeholder="Имя, email, телефон, id или роль"
+            />
+          </label>
+        </div>
+
+        {isLoadingUsers ? (
+          <div className={styles.emptyState}>Загружаем пользователей...</div>
+        ) : filteredUsers.length === 0 ? (
+          <div className={styles.emptyState}>
+            {users.length === 0 ? 'Пользователей пока нет.' : 'По вашему запросу ничего не найдено.'}
+          </div>
+        ) : (
+          <div className={styles.usersList}>
+            {filteredUsers.map((user) => {
+              const role = getUserRole(user);
+              const displayName = user.name?.trim() || user.email?.split('@')[0] || 'Пользователь';
+
+              return (
+                <article key={user.id} className={styles.userCard}>
+                  <div className={styles.userTop}>
+                    <div className={styles.userIdentity}>
+                      {user.avatar_url ? (
+                        <img src={user.avatar_url} alt={displayName} className={styles.avatar} />
+                      ) : (
+                        <div className={styles.avatarFallback}>{displayName.slice(0, 1).toUpperCase()}</div>
+                      )}
+
+                      <div className={styles.userMeta}>
+                        <h3 className={styles.userName}>{displayName}</h3>
+                        <div className={styles.badges}>
+                          <span className={`${styles.badge} ${styles[`role${role[0].toUpperCase()}${role.slice(1)}`]}`}>
+                            {getRoleLabel(role)}
+                          </span>
+                          {(user.isManager || user.isCourer) && user.isOpen ? (
+                            <span className={`${styles.badge} ${styles.statusOpen}`}>На смене</span>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={styles.actionsRow}>
+                      <button type="button" className={styles.secondaryAction} onClick={() => openOrdersPopup(user.id)}>
+                        Заказы
+                      </button>
+                      <button type="button" className={styles.secondaryAction} onClick={() => openEditModal(user)}>
+                        Редактировать
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.dangerAction}
+                        onClick={() => handleDelete(user.id)}
+                        disabled={isDeletingId === user.id}
+                      >
+                        {isDeletingId === user.id ? 'Удаляем...' : 'Удалить'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={styles.infoGrid}>
+                    <div className={styles.infoCard}>
+                      <span className={styles.infoLabel}>Email</span>
+                      <strong>{user.email || 'Не указан'}</strong>
+                    </div>
+
+                    <div className={styles.infoCard}>
+                      <span className={styles.infoLabel}>Телефон</span>
+                      <strong>{user.phone || 'Не указан'}</strong>
+                    </div>
+
+                    <div className={styles.infoCard}>
+                      <span className={styles.infoLabel}>Бонусы</span>
+                      <strong>{user.bonus_points ?? 0}</strong>
+                    </div>
+
+                    <div className={styles.infoCard}>
+                      <span className={styles.infoLabel}>Зарегистрирован</span>
+                      <strong>{formatDate(user.created_at)}</strong>
+                    </div>
+                  </div>
+
+                  <p className={styles.userId}>ID: {user.id}</p>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      {modalMode ? (
+        <div className={styles.overlay}>
+          <div className={styles.modal}>
+            <div className={styles.modalHeader}>
+              <div>
+                <p className={styles.modalEyebrow}>
+                  {modalMode === 'create' ? 'Новый аккаунт' : 'Редактирование аккаунта'}
+                </p>
+                <h2 className={styles.modalTitle}>
+                  {modalMode === 'create' ? 'Добавить пользователя вручную' : 'Изменить пользователя'}
+                </h2>
+              </div>
+
+              <button type="button" className={styles.closeButton} onClick={resetForm} aria-label="Закрыть">
+                ×
+              </button>
+            </div>
+
+            <div className={styles.formGrid}>
+              <label className={styles.field}>
+                <span>Имя</span>
+                <input
+                  value={form.name}
+                  onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))}
+                  placeholder="Имя пользователя"
+                />
+              </label>
+
+              <label className={styles.field}>
+                <span>Email</span>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
+                  placeholder="user@example.com"
+                />
+              </label>
+
+              <label className={styles.field}>
+                <span>Телефон</span>
+                <input
+                  value={form.phone}
+                  onChange={(event) => setForm((prev) => ({ ...prev, phone: event.target.value }))}
+                  placeholder="+7..."
+                />
+              </label>
+
+              <label className={styles.field}>
+                <span>Роль</span>
+                <select
+                  value={form.role}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, role: event.target.value as UserRole }))
+                  }
+                  disabled={editingUser?.isAdmin === true}
+                >
+                  {editingUser?.isAdmin ? <option value="admin">Администратор</option> : null}
+                  <option value="user">Пользователь</option>
+                  <option value="manager">Менеджер</option>
+                  <option value="courier">Курьер</option>
+                </select>
+              </label>
+
+              {modalMode === 'create' ? (
+                <label className={styles.field}>
+                  <span>Пароль</span>
+                  <input
+                    type="password"
+                    value={form.password}
+                    onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
+                    placeholder="Не короче 6 символов"
+                  />
+                </label>
+              ) : (
+                <>
+                  <label className={styles.field}>
+                    <span>Бонусы</span>
+                    <input
+                      type="number"
+                      value={form.bonusPoints}
+                      onChange={(event) => setForm((prev) => ({ ...prev, bonusPoints: event.target.value }))}
+                      placeholder="0"
+                    />
+                  </label>
+
+                  <label className={styles.field}>
+                    <span>Аватар</span>
+                    <input type="file" accept="image/*" onChange={(event) => setAvatar(event.target.files?.[0] || null)} />
+                  </label>
+                </>
+              )}
+            </div>
+
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.ghostAction} onClick={resetForm}>
+                Отмена
+              </button>
+              <button type="button" className={styles.primaryAction} onClick={handleSave} disabled={isSaving}>
+                {isSaving ? 'Сохраняем...' : modalMode === 'create' ? 'Создать аккаунт' : 'Сохранить изменения'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {ordersPopupOpen ? (
+        <div className={styles.overlay}>
+          <div className={`${styles.modal} ${styles.ordersModal}`}>
+            <div className={styles.modalHeader}>
+              <div>
+                <p className={styles.modalEyebrow}>История заказов</p>
+                <h2 className={styles.modalTitle}>Заказы пользователя</h2>
+              </div>
+
+              <button
+                type="button"
+                className={styles.closeButton}
+                onClick={() => setOrdersPopupOpen(false)}
+                aria-label="Закрыть"
+              >
+                ×
+              </button>
+            </div>
 
             {ordersLoading ? (
-              <Description>Загрузка...</Description>
+              <div className={styles.emptyState}>Загружаем заказы...</div>
             ) : currentOrders.length === 0 ? (
-              <Description>Заказов нет</Description>
+              <div className={styles.emptyState}>Заказов пока нет.</div>
             ) : (
-              currentOrders.map((order) => (
-                <div key={order.id} className={styles.orderGroup}>
-                  <Description>ID: {order.id}</Description>
-                  <Description>Дата: {order.created_at.split("T")[0]}</Description>
-                  <Description>Позиции:</Description>
+              <div className={styles.ordersList}>
+                {currentOrders.map((order) => (
+                  <article key={order.id} className={styles.orderCard}>
+                    <div className={styles.orderTop}>
+                      <div>
+                        <p className={styles.orderId}>Заказ #{order.id.slice(0, 8)}</p>
+                        <p className={styles.orderDate}>{formatDate(order.created_at)}</p>
+                      </div>
 
-                  {order.items.length === 0 ? (
-                    <Description>Нет позиций</Description>
-                  ) : (
-                    order.items.map((item) => (
-                      <Description key={item.id} className={styles.orderItem}>
-                        • {item.menu_items?.name ?? "Товар"} x{item.quantity ?? 1} —{" "}
-                        {item.price_at_time ?? item.menu_items?.price ?? 0} ₽
-                      </Description>
-                    ))
-                  )}
-                </div>
-              ))
+                      <strong className={styles.orderTotal}>{formatCurrency(getOrderTotal(order))}</strong>
+                    </div>
+
+                    <div className={styles.orderItems}>
+                      {order.items.map((item) => (
+                        <span key={item.id} className={styles.itemChip}>
+                          {item.menu_items?.name ?? 'Позиция'} x {item.quantity ?? 1}
+                        </span>
+                      ))}
+                    </div>
+                  </article>
+                ))}
+              </div>
             )}
-
-            <PopupButtons>
-              <PopupCancelButton onClick={() => setOrdersPopupOpen(false)}>Закрыть</PopupCancelButton>
-            </PopupButtons>
-          </PopupContainer>
-        </PopupOverlay>
-      )}
-
-      <Footer />
-    </>
+          </div>
+        </div>
+      ) : null}
+    </AdminShell>
   );
 }

@@ -40,9 +40,14 @@ export type AdminUserProfile = {
   id: string;
   name: string | null;
   email: string | null;
+  phone: string | null;
   avatar_url: string | null;
   bonus_points: number | null;
   created_at: string | null;
+  isOpen: boolean | null;
+  isAdmin: boolean | null;
+  isCourer: boolean | null;
+  isManager: boolean | null;
 };
 
 export async function fetchHeaderProfile(userId: string) {
@@ -85,6 +90,14 @@ export async function fetchAuthenticatedRoleProfile(accessToken?: string) {
   return { data: data as AuthenticatedRoleProfile, error: null };
 }
 
+async function getAccessToken() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  return session?.access_token ?? '';
+}
+
 export async function fetchProfileSummary(userId: string) {
   return supabase
     .from('profiles')
@@ -122,17 +135,59 @@ export async function updateProfileByIdAdmin(
     bonus_points?: number | null;
     avatar_url?: string | null;
     phone?: string | null;
+    isAdmin?: boolean | null;
+    isCourer?: boolean | null;
+    isManager?: boolean | null;
   }
 ) {
+  const token = await getAccessToken();
+
+  if (!token) {
+    return { data: null, error: new Error('missing_session') };
+  }
+
   const res = await fetch('/api/admin/update-user', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify({ userId, payload }),
   });
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     return { data: null, error: new Error(data?.error ?? 'update_failed') };
+  }
+
+  return { data, error: null };
+}
+
+export async function createUserByAdmin(payload: {
+  name: string;
+  email: string;
+  password: string;
+  phone?: string | null;
+  role: 'user' | 'manager' | 'courier';
+}) {
+  const token = await getAccessToken();
+
+  if (!token) {
+    return { data: null, error: new Error('missing_session') };
+  }
+
+  const res = await fetch('/api/admin/create-user', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return { data: null, error: new Error(data?.error ?? 'create_user_failed') };
   }
 
   return { data, error: null };
@@ -146,9 +201,18 @@ export async function upsertProfileById(
 }
 
 export async function deleteProfileById(userId: string) {
+  const token = await getAccessToken();
+
+  if (!token) {
+    return { data: null, error: new Error('missing_session') };
+  }
+
   const res = await fetch('/api/admin/delete-user', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify({ userId }),
   });
 
@@ -163,7 +227,7 @@ export async function deleteProfileById(userId: string) {
 export async function fetchAdminUsers() {
   return supabase
     .from('profiles')
-    .select('id, name, email, avatar_url, bonus_points, created_at')
+    .select('id, name, email, phone, avatar_url, bonus_points, created_at, "isOpen", "isAdmin", "isCourer", "isManager"')
     .order('created_at', { ascending: true });
 }
 

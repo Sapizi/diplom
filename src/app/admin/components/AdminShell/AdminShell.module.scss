@@ -1,0 +1,279 @@
+.page {
+  min-height: 100dvh;
+  font-family: "Montserrat", sans-serif;
+  background: #f7f3ee;
+  color: #23211f;
+}
+
+.page button,
+.page select,
+.page input,
+.page textarea {
+  font: inherit;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 19;
+  border: 0;
+  background: rgba(20, 20, 20, 0.36);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.overlayVisible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 20;
+  width: 332px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 34px 26px 28px;
+  background: #212121;
+  color: #f6f1eb;
+  box-shadow: 22px 0 42px rgba(24, 24, 24, 0.1);
+  overflow-y: auto;
+}
+
+.sidebarTop {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.logoLink {
+  display: inline-flex;
+  align-items: center;
+}
+
+.logo {
+  width: 122px;
+  height: auto;
+  filter: brightness(0) invert(1);
+}
+
+.profileCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.avatar,
+.avatarFallback {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.avatar {
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.avatarFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f99026 0%, #d45f00 100%);
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.profileMeta {
+  min-width: 0;
+}
+
+.profileName {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.profileRole {
+  margin-top: 6px;
+  color: rgba(246, 241, 235, 0.68);
+  font-size: 14px;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 14px 14px 16px;
+  border-radius: 18px;
+  background: transparent;
+  color: rgba(246, 241, 235, 0.72);
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.navItem svg {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+}
+
+.navItemActive {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.logoutButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 54px;
+  border: 0;
+  border-radius: 18px;
+  background: #f04d3a;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.logoutButton:disabled {
+  opacity: 0.75;
+  cursor: default;
+}
+
+.logoutButton svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+}
+
+.content {
+  min-width: 0;
+  min-height: 100dvh;
+  margin-left: 332px;
+  padding: 30px 32px 36px;
+}
+
+.topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.headingBlock {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.menuButton {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 16px;
+  background: #212121;
+  color: #ffffff;
+}
+
+.menuButton svg {
+  width: 22px;
+  height: 22px;
+}
+
+.eyebrow {
+  color: #8c7f72;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin-top: 10px;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.06;
+  font-weight: 800;
+}
+
+.subtitle {
+  margin-top: 10px;
+  max-width: 620px;
+  color: #6f655c;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+@media (max-width: 960px) {
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(82vw, 320px);
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+  }
+
+  .sidebarOpen {
+    transform: translateX(0);
+  }
+
+  .content {
+    margin-left: 0;
+    padding: 18px 16px 24px;
+  }
+
+  .topbar {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+  }
+
+  .menuButton {
+    display: inline-flex;
+  }
+
+  .actions {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+}
+
+@media (max-width: 720px) {
+  .title {
+    font-size: 24px;
+  }
+
+  .actions {
+    width: 100%;
+  }
+}

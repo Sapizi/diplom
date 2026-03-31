@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { readCart, setCartItemQuantity, subscribeCart, type CartItem as CartStorageItem } from '@/app/api/client/cart';
 import Header from '@/app/components/Header/Header';
 import Footer from '@/app/components/Footer/Footer';
 import { Wrapper } from '@/app/components/Header/HeaderStyles';
@@ -29,13 +30,7 @@ import {
 } from './CartStyles';
 import styles from './page.module.scss';
 
-type CartItemType = {
-  id: string;
-  name: string;
-  price: number;
-  image_url: string | null;
-  quantity: number;
-};
+type CartItemType = CartStorageItem;
 
 type OrderType = 'restaurant' | 'delivery';
 
@@ -51,10 +46,11 @@ export default function Cart() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const cartRaw = localStorage.getItem('cart');
-    if (cartRaw) {
-      setCart(JSON.parse(cartRaw));
-    }
+    const syncCart = () => {
+      setCart(readCart());
+    };
+
+    syncCart();
 
     getCurrentUser().then((user) => {
       if (!user) {
@@ -73,17 +69,28 @@ export default function Cart() {
 
       setIsAuthChecked(true);
     });
+
+    return subscribeCart(syncCart);
   }, [router]);
 
   const updateQuantity = (id: string, delta: number) => {
-    setCart((prev) => {
-      const updated = prev
-        .map((item) => (item.id === id ? { ...item, quantity: item.quantity + delta } : item))
-        .filter((item) => item.quantity > 0);
+    const currentItem = cart.find((item) => item.id === id);
+    if (!currentItem) {
+      return;
+    }
 
-      localStorage.setItem('cart', JSON.stringify(updated));
-      return updated;
-    });
+    const nextQuantity = currentItem.quantity + delta;
+    setCart(
+      setCartItemQuantity(
+        {
+          id: currentItem.id,
+          name: currentItem.name,
+          price: currentItem.price,
+          image_url: currentItem.image_url,
+        },
+        nextQuantity
+      )
+    );
   };
 
   const totalPrice = useMemo(

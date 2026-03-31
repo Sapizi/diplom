@@ -22,6 +22,10 @@ export type CourierOrder = {
   delivery_started_at: string | null;
   delivered_at: string | null;
   estimated_delivery_at: string | null;
+  courier_latitude: number | null;
+  courier_longitude: number | null;
+  courier_location_updated_at: string | null;
+  customer_tracking_enabled: boolean;
   is_paid: boolean;
   customer: {
     id: string | null;
@@ -125,6 +129,28 @@ export async function updateCourierOrderAction(orderId: string, action: string) 
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ action }),
+  });
+
+  if (res.error) {
+    return { data: null, error: res.error };
+  }
+
+  return {
+    data: res.data?.order as CourierOrder,
+    error: null,
+  };
+}
+
+export async function updateCourierOrderLocation(orderId: string, payload: {
+  latitude: number;
+  longitude: number;
+}) {
+  const res = await authedFetch(`/api/courier/orders/${orderId}/location`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
   });
 
   if (res.error) {

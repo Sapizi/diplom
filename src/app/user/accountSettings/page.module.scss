@@ -23,6 +23,10 @@
   margin-bottom: 8px;
 }
 
+.fileInput + div + div {
+  display: none;
+}
+
 .helpText {
   color: #666;
   font-size: 12px;

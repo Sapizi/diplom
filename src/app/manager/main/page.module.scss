@@ -1,10 +1,7 @@
 .page {
   min-height: 100dvh;
-  display: flex;
   font-family: "Montserrat", sans-serif;
-  background:
-    radial-gradient(circle at top left, rgba(249, 144, 38, 0.14), transparent 28%),
-    linear-gradient(180deg, #f7f3ee 0%, #f2ede6 100%);
+  background: #f7f3ee;
   color: #23211f;
 }
 
@@ -42,8 +39,8 @@
 }
 
 .sidebar {
-  position: sticky;
-  top: 0;
+  position: fixed;
+  inset: 0 auto 0 0;
   z-index: 20;
   width: 332px;
   min-height: 100dvh;
@@ -55,6 +52,7 @@
   background: #212121;
   color: #f6f1eb;
   box-shadow: 22px 0 42px rgba(24, 24, 24, 0.1);
+  overflow-y: auto;
 }
 
 .sidebarTop {
@@ -189,8 +187,9 @@
 }
 
 .content {
-  flex: 1;
   min-width: 0;
+  min-height: 100dvh;
+  margin-left: 332px;
   padding: 30px 32px 36px;
 }
 
@@ -231,6 +230,14 @@
   font-size: clamp(28px, 4vw, 42px);
   line-height: 1.06;
   font-weight: 800;
+}
+
+.topbarText {
+  margin-top: 10px;
+  max-width: 560px;
+  color: #6f655c;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 .timeCard {
@@ -324,6 +331,13 @@
   gap: 18px;
 }
 
+.panelSide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
 .panelEyebrow {
   color: #8c7f72;
   font-size: 13px;
@@ -347,6 +361,29 @@
   color: #756b63;
   font-size: 14px;
   text-align: right;
+}
+
+.searchField {
+  display: grid;
+  gap: 8px;
+  min-width: min(100%, 320px);
+}
+
+.searchLabel {
+  color: #6f655c;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.searchField input {
+  min-height: 46px;
+  width: 100%;
+  padding: 0 14px;
+  border: 1px solid rgba(33, 33, 33, 0.1);
+  border-radius: 14px;
+  background: #ffffff;
+  color: #23211f;
 }
 
 .emptyState {
@@ -508,6 +545,40 @@
   font-weight: 500;
 }
 
+.reviewCard {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid rgba(33, 33, 33, 0.06);
+}
+
+.reviewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.reviewTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #4e453e;
+}
+
+.reviewStars {
+  color: #d47a00;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+}
+
+.reviewComment {
+  margin-top: 10px;
+  color: #5e544c;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 @media (max-width: 1180px) {
   .metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -532,6 +603,7 @@
   }
 
   .content {
+    margin-left: 0;
     padding: 18px 16px 24px;
   }
 
@@ -556,6 +628,16 @@
 
   .panelMeta {
     align-items: flex-start;
+    text-align: left;
+  }
+
+  .panelSide,
+  .searchField {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .searchLabel {
     text-align: left;
   }
 }

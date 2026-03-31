@@ -29,6 +29,10 @@ export type CourierOrder = {
   delivery_started_at: string | null;
   delivered_at: string | null;
   estimated_delivery_at: string | null;
+  courier_latitude: number | null;
+  courier_longitude: number | null;
+  courier_location_updated_at: string | null;
+  customer_tracking_enabled: boolean;
   is_paid: boolean;
   customer: {
     id: string | null;
@@ -80,6 +84,12 @@ function mapCourierOrder(order: any, customer?: { id: string; name: string | nul
     delivery_started_at: order.delivery_started_at ? String(order.delivery_started_at) : null,
     delivered_at: order.delivered_at ? String(order.delivered_at) : null,
     estimated_delivery_at: order.estimated_delivery_at ? String(order.estimated_delivery_at) : null,
+    courier_latitude: toNumber(order.courier_latitude),
+    courier_longitude: toNumber(order.courier_longitude),
+    courier_location_updated_at: order.courier_location_updated_at
+      ? String(order.courier_location_updated_at)
+      : null,
+    customer_tracking_enabled: Boolean(order.customer_tracking_enabled),
     is_paid: isPaid,
     customer: {
       id: customer?.id ?? (order.user_id ? String(order.user_id) : null),
@@ -205,6 +215,10 @@ export async function fetchCourierWorkspace(userId: string) {
         delivery_started_at,
         delivered_at,
         estimated_delivery_at,
+        courier_latitude,
+        courier_longitude,
+        courier_location_updated_at,
+        customer_tracking_enabled,
         delivery_city,
         delivery_street,
         delivery_house,
@@ -288,6 +302,10 @@ export async function fetchCourierOrder(userId: string, orderId: string) {
         delivery_started_at,
         delivered_at,
         estimated_delivery_at,
+        courier_latitude,
+        courier_longitude,
+        courier_location_updated_at,
+        customer_tracking_enabled,
         delivery_city,
         delivery_street,
         delivery_house,
@@ -433,7 +451,7 @@ export async function updateCourierOrderState(userId: string, orderId: string, a
       const { data: updatedOrder } = await supabase
         .from('orders')
         .select(
-          'id, user_id, created_at, updated_at, status, total_amount, courier_id, courier_status, courier_assigned_at, delivery_started_at, delivered_at, estimated_delivery_at, delivery_city, delivery_street, delivery_house, delivery_entrance, delivery_apartment, delivery_floor, delivery_comment, delivery_latitude, delivery_longitude'
+          'id, user_id, created_at, updated_at, status, total_amount, courier_id, courier_status, courier_assigned_at, delivery_started_at, delivered_at, estimated_delivery_at, courier_latitude, courier_longitude, courier_location_updated_at, customer_tracking_enabled, delivery_city, delivery_street, delivery_house, delivery_entrance, delivery_apartment, delivery_floor, delivery_comment, delivery_latitude, delivery_longitude'
         )
         .eq('id', orderId)
         .maybeSingle();

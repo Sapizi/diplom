@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import Footer from "@/app/components/Footer/Footer";
 import Header from "@/app/components/Header/Header";
+import PageLoader from "@/app/components/PageLoader/PageLoader";
 import { Wrapper } from "@/app/components/Header/HeaderStyles";
 import { Container } from "../account/AccountStyles";
 import { Title } from "@/app/MainPageStyles";
@@ -129,6 +130,8 @@ export default function AccountSettings() {
     setUploading(false);
   };
 
+  if (loading) return <PageLoader label="Загружаем настройки профиля..." />;
+
   if (loading) return <div>Загрузка...</div>;
   if (!hasAccess) return null;
   if (error) return <div className={styles.errorState}>{error}</div>;
@@ -180,6 +183,8 @@ export default function AccountSettings() {
               disabled={uploading}
               className={styles.fileInput}
             />
+
+            {uploading && <PageLoader inline label="Загружаем фото..." />}
 
             {uploading && <div>Загрузка...</div>}
 

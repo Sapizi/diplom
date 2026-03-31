@@ -53,13 +53,16 @@ export default function AddressMapPicker({
           center,
           zoom: latitude != null && longitude != null ? 17 : 12,
           controls: ['zoomControl', 'geolocationControl'],
+        }, {
+          suppressMapOpenBlock: true,
         });
 
         const placemark = new ymaps.Placemark(
           center,
           {},
           {
-            preset: 'islands#orangeDotIcon',
+            preset: 'islands#circleDotIcon',
+            iconColor: '#f99026',
           }
         );
 
@@ -84,16 +87,48 @@ export default function AddressMapPicker({
           });
         });
 
-        setTimeout(() => {
-          try {
-            map.container.fitToViewport();
-          } catch (error) {
-            console.error('Yandex fitToViewport error:', error);
-          }
-        }, 0);
-
         mapRef.current = map;
         placemarkRef.current = placemark;
+
+        const syncViewport = () => {
+          window.requestAnimationFrame(() => {
+            try {
+              map.container.fitToViewport();
+            } catch (error) {
+              console.error('Yandex fitToViewport error:', error);
+            }
+          });
+        };
+
+        const resizeObserver = new ResizeObserver(() => {
+          syncViewport();
+        });
+
+        resizeObserver.observe(containerRef.current);
+
+        const handleViewportChange = () => {
+          syncViewport();
+        };
+
+        window.addEventListener('resize', handleViewportChange);
+        window.addEventListener('scroll', handleViewportChange, true);
+        window.visualViewport?.addEventListener('resize', handleViewportChange);
+        window.visualViewport?.addEventListener('scroll', handleViewportChange);
+
+        const syncTimers = [0, 150, 400].map((delay) =>
+          window.setTimeout(() => {
+            syncViewport();
+          }, delay)
+        );
+
+        (mapRef.current as any).__cleanup = () => {
+          resizeObserver.disconnect();
+          window.removeEventListener('resize', handleViewportChange);
+          window.removeEventListener('scroll', handleViewportChange, true);
+          window.visualViewport?.removeEventListener('resize', handleViewportChange);
+          window.visualViewport?.removeEventListener('scroll', handleViewportChange);
+          syncTimers.forEach((timerId) => window.clearTimeout(timerId));
+        };
       } catch (error) {
         console.error('Yandex map init error:', error);
       }
@@ -105,6 +140,7 @@ export default function AddressMapPicker({
       isMounted = false;
 
       if (mapRef.current) {
+        mapRef.current.__cleanup?.();
         mapRef.current.destroy();
         mapRef.current = null;
         placemarkRef.current = null;

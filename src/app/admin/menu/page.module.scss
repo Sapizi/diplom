@@ -1,11 +1,63 @@
+.primaryAction,
+.secondaryAction {
+  min-height: 46px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primaryAction {
+  background: #23211f;
+  color: #ffffff;
+}
+
+.secondaryAction {
+  background: #efe7de;
+  color: #4e433b;
+}
+
+.panel {
+  margin-top: 26px;
+  padding: 24px;
+  border-radius: 32px;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 22px 44px rgba(61, 48, 32, 0.08);
+}
+
+.panelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.panelEyebrow {
+  color: #8c7f72;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.panelTitle {
+  margin-top: 8px;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.08;
+}
+
+.panelMeta {
+  color: #756b63;
+  font-size: 14px;
+}
+
 .actionsRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 20px;
-}
-
-.actionButton {
-  width: 250px;
+  gap: 12px;
 }
 
 .filters {
@@ -23,13 +75,45 @@
   background-color: red;
 }
 
+.availabilityToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #252525;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.availabilityToggle input {
+  width: 18px;
+  height: 18px;
+}
+
+.availableText {
+  color: #1f7a34;
+}
+
+.unavailableText {
+  color: #b93c31;
+}
+
 @media (max-width: 640px) {
+  .panel {
+    border-radius: 24px;
+  }
+
+  .panelHeader,
   .actionsRow {
     flex-direction: column;
   }
 
-  .actionButton,
+  .primaryAction,
+  .secondaryAction,
   .filterControl {
     width: 100%;
+  }
+
+  .panelTitle {
+    font-size: 24px;
   }
 }

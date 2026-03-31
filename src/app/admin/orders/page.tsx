@@ -1,21 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 import {
   fetchAllOrdersWithItems,
   updateOrderStatus,
   type OrderDeliveryAddress,
   type OrderType,
 } from '@/app/api/client/orders';
-import { getSession, onAuthStateChange } from '@/app/api/client/auth';
-import { getIsAdmin } from '@/app/api/client/profiles';
-import Footer from '@/app/components/Footer/Footer';
-import Header from '@/app/components/Header/Header';
-import { Wrapper } from '@/app/components/Header/HeaderStyles';
-import { TitleBlock } from '../menu/AdminMenuStyles';
-import { Title } from '@/app/MainPageStyles';
-import { Description } from '../menu/AdminMenuStyles';
+import PageLoader from '@/app/components/PageLoader/PageLoader';
+import AdminShell from '@/app/admin/components/AdminShell/AdminShell';
+import { useAdminAccess } from '@/app/admin/useAdminAccess';
 import styles from './page.module.scss';
 
 function formatDeliveryAddress(address: OrderDeliveryAddress | null) {
@@ -43,13 +37,30 @@ function formatDeliveryAddress(address: OrderDeliveryAddress | null) {
   return [firstLine, secondLine].filter(Boolean).join(' | ');
 }
 
-export default function AdminOrders() {
-  const router = useRouter();
+function formatCurrency(value: number | null | undefined) {
+  return new Intl.NumberFormat('ru-RU', {
+    style: 'currency',
+    currency: 'RUB',
+    maximumFractionDigits: 0,
+  }).format(value ?? 0);
+}
+
+function getOrderTotal(order: OrderType) {
+  if (typeof order.total_amount === 'number') {
+    return order.total_amount;
+  }
+
+  return order.items.reduce((total, item) => {
+    const price = item.price_at_time ?? item.menu_items?.price ?? 0;
+    return total + price * (item.quantity ?? 1);
+  }, 0);
+}
+
+export default function AdminOrdersPage() {
+  const { profile, isChecking } = useAdminAccess();
   const [orders, setOrders] = useState<OrderType[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
-  const [isReady, setIsReady] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const resolveStatusKey = (status?: string) => {
@@ -73,81 +84,33 @@ export default function AdminOrders() {
     return styles.statusAccepted;
   };
 
-  const fetchOrders = async () => {
-    setLoading(true);
-    const { data: ordersData, error: ordersError } = await fetchAllOrdersWithItems();
+  useEffect(() => {
+    if (!profile) return;
 
-    if (ordersError) {
-      console.error(ordersError);
+    const loadOrders = async () => {
+      setLoading(true);
+      const { data: ordersData, error: ordersError } = await fetchAllOrdersWithItems();
+
+      if (ordersError) {
+        console.error(ordersError);
+        setLoading(false);
+        return;
+      }
+
+      setOrders(ordersData || []);
       setLoading(false);
-      return;
-    }
-
-    setOrders(ordersData || []);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    let isMounted = true;
-    let unsubscribe: null | (() => void) = null;
-
-    const checkAdmin = async (session: any) => {
-      const { data: profile, error: profileError } = await getIsAdmin(session.user.id);
-
-      if (!isMounted) return;
-
-      if (profileError || !profile?.isAdmin) {
-        setIsChecking(false);
-        router.push('/');
-        return;
-      }
-
-      setIsReady(true);
-      setIsChecking(false);
     };
 
-    const init = async () => {
-      const {
-        data: { session },
-        error,
-      } = await getSession();
+    loadOrders();
+  }, [profile]);
 
-      if (session) {
-        await checkAdmin(session);
-        return;
-      }
-
-      if (error) {
-        setIsChecking(false);
-        router.push('/login');
-        return;
-      }
-
-      const { data: authListener } = onAuthStateChange(async (_event, nextSession) => {
-        if (!isMounted) return;
-        if (nextSession) {
-          await checkAdmin(nextSession);
-        } else {
-          setIsChecking(false);
-          router.push('/login');
-        }
-      });
-
-      unsubscribe = () => authListener.subscription.unsubscribe();
-    };
-
-    init();
-
-    return () => {
-      isMounted = false;
-      if (unsubscribe) unsubscribe();
-    };
-  }, [router]);
-
-  useEffect(() => {
-    if (!isReady) return;
-    fetchOrders();
-  }, [isReady]);
+  const filteredOrders = useMemo(
+    () =>
+      orders.filter((order) =>
+        searchTerm ? order.id.toLowerCase().includes(searchTerm.toLowerCase()) : true
+      ),
+    [orders, searchTerm]
+  );
 
   const handleStatusChange = async (orderId: string, nextStatus: string) => {
     setUpdatingId(orderId);
@@ -166,77 +129,90 @@ export default function AdminOrders() {
     setUpdatingId(null);
   };
 
-  if (isChecking) return <p>Loading...</p>;
+  if (isChecking) return <PageLoader label="Проверяем доступ..." />;
+  if (!profile) return null;
+  if (loading) return <PageLoader label="Загружаем заказы..." />;
 
   return (
-    <>
-      <Header />
-      <Wrapper>
-        <TitleBlock>
-          <Title>Все заказы</Title>
-          <div className={styles.searchWrap}>
+    <AdminShell
+      profile={profile}
+      active="orders"
+      title="Заказы"
+      subtitle="Полный список заказов с поиском по id и быстрым обновлением статуса."
+    >
+      <section className={styles.panel}>
+        <div className={styles.panelHeader}>
+          <div>
+            <p className={styles.panelEyebrow}>Лента заказов</p>
+            <h2 className={styles.panelTitle}>Все заказы</h2>
+          </div>
+
+          <label className={styles.searchWrap}>
+            <span className={styles.searchLabel}>Поиск по id</span>
             <input
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Поиск по ID заказа"
               className={styles.searchInput}
             />
-          </div>
-        </TitleBlock>
+          </label>
+        </div>
 
-        {loading ? (
-          <Description>Загрузка...</Description>
-        ) : orders.length === 0 ? (
-          <Description>Заказов нет</Description>
+        {filteredOrders.length === 0 ? (
+          <div className={styles.emptyState}>
+            {orders.length === 0 ? 'Заказов нет' : 'По вашему запросу ничего не найдено'}
+          </div>
         ) : (
-          orders
-            .filter((order) =>
-              searchTerm ? order.id.toLowerCase().includes(searchTerm.toLowerCase()) : true
-            )
-            .map((order) => (
-              <div key={order.id} className={styles.orderCard}>
-                <Description>ID заказа: {order.id}</Description>
-                <Description>Пользователь ID: {order.user_id}</Description>
-                <Description>Дата: {order.created_at.split('T')[0]}</Description>
-                <Description>
-                  Тип: {order.type === 'delivery' ? 'Доставка' : 'В ресторане'}
-                </Description>
-                <Description className={styles.deliveryLine}>
-                  Адрес: {formatDeliveryAddress(order.delivery_address ?? null)}
-                </Description>
-                <div className={styles.statusRow}>
-                  <span className={`${styles.status} ${getStatusClassName(order.status)}`}>
-                    {getStatusLabel(order.status)}
-                  </span>
-                  <select
-                    value={resolveStatusKey(order.status)}
-                    onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                    disabled={updatingId === order.id}
-                    className={styles.statusSelect}
-                  >
-                    <option value="accepted">Принят</option>
-                    <option value="in_progress">В работе</option>
-                    <option value="ready">Готов</option>
-                  </select>
+          filteredOrders.map((order) => (
+            <div key={order.id} className={styles.orderCard}>
+              <div className={styles.orderTop}>
+                <div>
+                  <p className={styles.orderId}>Заказ #{order.id.slice(0, 8)}</p>
+                  <p className={styles.orderMeta}>Пользователь ID: {order.user_id}</p>
+                  <p className={styles.orderMeta}>Дата: {order.created_at.split('T')[0]}</p>
                 </div>
-                <Description>Позиции:</Description>
+
+                <strong className={styles.orderTotal}>{formatCurrency(getOrderTotal(order))}</strong>
+              </div>
+
+              <p className={styles.deliveryLine}>
+                Тип: {order.type === 'delivery' ? 'Доставка' : 'В ресторане'}
+              </p>
+              <p className={styles.deliveryLine}>
+                Адрес: {formatDeliveryAddress(order.delivery_address ?? null)}
+              </p>
+
+              <div className={styles.statusRow}>
+                <span className={`${styles.status} ${getStatusClassName(order.status)}`}>
+                  {getStatusLabel(order.status)}
+                </span>
+                <select
+                  value={resolveStatusKey(order.status)}
+                  onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                  disabled={updatingId === order.id}
+                  className={styles.statusSelect}
+                >
+                  <option value="accepted">Принят</option>
+                  <option value="in_progress">В работе</option>
+                  <option value="ready">Готов</option>
+                </select>
+              </div>
+
+              <div className={styles.orderItems}>
                 {order.items.length === 0 ? (
-                  <Description>Нет позиций</Description>
+                  <p className={styles.orderItem}>Нет позиций</p>
                 ) : (
                   order.items.map((item) => (
-                    <div key={item.id} className={styles.orderItem}>
-                      <Description>
-                        • {item.menu_items?.name ?? 'Товар'} x{item.quantity ?? 1} —{' '}
-                        {item.price_at_time ?? item.menu_items?.price ?? 0} ₽
-                      </Description>
-                    </div>
+                    <span key={item.id} className={styles.itemChip}>
+                      {item.menu_items?.name ?? 'Товар'} x{item.quantity ?? 1}
+                    </span>
                   ))
                 )}
               </div>
-            ))
+            </div>
+          ))
         )}
-      </Wrapper>
-      <Footer />
-    </>
+      </section>
+    </AdminShell>
   );
 }

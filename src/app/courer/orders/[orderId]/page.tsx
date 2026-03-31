@@ -1,9 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { fetchCourierOrder, updateCourierOrderAction, type CourierOrder } from '@/app/api/client/courier';
+import {
+  fetchCourierOrder,
+  updateCourierOrderAction,
+  updateCourierOrderLocation,
+  type CourierOrder,
+} from '@/app/api/client/courier';
 import { subscribeCourierWorkspace } from '@/app/api/client/realtime';
 import frameStyles from '../../courierFrame.module.scss';
 import {
@@ -44,6 +49,8 @@ export default function CourierOrderPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
   const [isIssueSheetOpen, setIsIssueSheetOpen] = useState(false);
+  const watchIdRef = useRef<number | null>(null);
+  const lastSentLocationRef = useRef<string>('');
 
   const loadOrder = useCallback(async () => {
     if (!orderId) {
@@ -96,6 +103,67 @@ export default function CourierOrderPage() {
       return nextState;
     });
   }, [order]);
+
+  useEffect(() => {
+    if (!order?.id || !profile?.id) {
+      return;
+    }
+
+    const canTrack =
+      order.courier_id === profile.id &&
+      (order.courier_status === 'on_the_way' || order.courier_status === 'arrived');
+
+    if (!canTrack || typeof window === 'undefined' || !navigator.geolocation) {
+      if (watchIdRef.current != null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+      return;
+    }
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      async (position) => {
+        const latitude = Number(position.coords.latitude.toFixed(6));
+        const longitude = Number(position.coords.longitude.toFixed(6));
+        const nextKey = `${latitude}:${longitude}`;
+
+        if (lastSentLocationRef.current === nextKey) {
+          return;
+        }
+
+        lastSentLocationRef.current = nextKey;
+
+        const { data, error } = await updateCourierOrderLocation(order.id, {
+          latitude,
+          longitude,
+        });
+
+        if (error) {
+          console.error('Courier live location update error:', error);
+          return;
+        }
+
+        if (data) {
+          setOrder(data);
+        }
+      },
+      (error) => {
+        console.error('Courier geolocation error:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 10000,
+      }
+    );
+
+    return () => {
+      if (watchIdRef.current != null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+    };
+  }, [order?.courier_id, order?.courier_status, order?.id, profile?.id]);
 
   const primaryAction = useMemo(() => {
     if (!order || !profile) {

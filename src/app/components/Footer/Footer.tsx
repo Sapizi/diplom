@@ -1,4 +1,5 @@
 'use client'
+import Link from "next/link";
 import {
     FooterBottom,
     FooterContainer, FooterLink,
@@ -15,7 +16,9 @@ export default function Footer() {
             <FooterContainer>
                 <Wrapper>
                     <FooterTop>
-                        <Logo src="/logo.svg" alt="Logotype"/>
+                        <Link href="/" aria-label="Перейти на главную">
+                            <Logo src="/logo.svg" alt="Logotype"/>
+                        </Link>
                         <FooterLinks>
                             <FooterPhoneAndTime>
                                 <FooterPhone href={'tel:+79999999999'}>+7-999-999-99-99</FooterPhone>

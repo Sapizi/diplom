@@ -198,7 +198,7 @@ function resolveStatusKey(status?: string) {
     return 'accepted';
   }
 
-  if (status === 'accepted' || status === 'in_progress' || status === 'ready') {
+  if (status === 'accepted' || status === 'in_progress' || status === 'ready' || status === 'delivered') {
     return status;
   }
 
@@ -238,6 +238,35 @@ function formatDeliveryAddress(address: OrderDeliveryAddress | null) {
   return [primary, details, address.comment].filter(Boolean).join(' • ');
 }
 
+function renderRatingStars(rating: number) {
+  return Array.from({ length: 5 }, (_, index) => (index < rating ? '★' : '☆')).join('');
+}
+
+function matchesOrderSearch(order: OrderType, query: string) {
+  const normalizedQuery = query.trim().toLowerCase();
+
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  const address = order.delivery_address;
+  const haystack = [
+    order.id,
+    order.id.slice(0, 8),
+    order.type === 'delivery' ? 'доставка' : 'в зале',
+    address?.city,
+    address?.street,
+    address?.house,
+    order.review?.comment,
+    ...order.items.map((item) => item.menu_items?.name ?? ''),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  return haystack.includes(normalizedQuery);
+}
+
 export default function ManagerMainPage() {
   const router = useRouter();
   const { profile, isChecking } = useManagerAccess();
@@ -247,6 +276,7 @@ export default function ManagerMainPage() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
+  const [searchValue, setSearchValue] = useState('');
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
@@ -330,6 +360,11 @@ export default function ManagerMainPage() {
     const emailName = profile?.email.split('@')[0]?.trim();
     return emailName || 'Менеджер';
   }, [profile]);
+
+  const filteredOrders = useMemo(
+    () => orders.filter((order) => matchesOrderSearch(order, searchValue)),
+    [orders, searchValue]
+  );
 
   const handleLogout = async () => {
     if (isLoggingOut) {
@@ -446,7 +481,7 @@ export default function ManagerMainPage() {
 
           <div>
             <p className={styles.eyebrow}>Панель менеджера</p>
-            <h1 className={styles.title}>Заказы в реальном времени</h1>
+            <p className={styles.topbarText}>Сначала новые заказы, потом старые. Поиск работает по номеру, адресу и блюдам.</p>
           </div>
 
           <div className={styles.timeCard}>
@@ -493,23 +528,37 @@ export default function ManagerMainPage() {
               <h2 className={styles.panelTitle}>Сначала новые, затем старые</h2>
             </div>
 
-            <div className={styles.panelMeta}>
-              <span>{orders.length} всего</span>
-              <span>
-                {summary.averageProductionTime
-                  ? `Среднее время готовности ${formatDurationLabel(summary.averageProductionTime)}`
-                  : 'Среднее время появится после первых готовых заказов'}
-              </span>
+            <div className={styles.panelSide}>
+              <label className={styles.searchField}>
+                <span className={styles.searchLabel}>Поиск заказа</span>
+                <input
+                  type="search"
+                  value={searchValue}
+                  onChange={(event) => setSearchValue(event.target.value)}
+                  placeholder="Номер, адрес или блюдо"
+                />
+              </label>
+
+              <div className={styles.panelMeta}>
+                <span>{filteredOrders.length} из {orders.length}</span>
+                <span>
+                  {summary.averageProductionTime
+                    ? `Среднее время готовности ${formatDurationLabel(summary.averageProductionTime)}`
+                    : 'Среднее время появится после первых готовых заказов'}
+                </span>
+              </div>
             </div>
           </div>
 
           {isLoadingOrders ? (
             <div className={styles.emptyState}>Загружаем заказы...</div>
-          ) : orders.length === 0 ? (
-            <div className={styles.emptyState}>Заказов пока нет.</div>
+          ) : filteredOrders.length === 0 ? (
+            <div className={styles.emptyState}>
+              {orders.length === 0 ? 'Заказов пока нет.' : 'По вашему запросу ничего не найдено.'}
+            </div>
           ) : (
             <div className={styles.ordersList}>
-              {orders.map((order) => {
+              {filteredOrders.map((order) => {
                 const completionTime = getCompletionTime(order);
                 const leadTime = formatDurationLabel(
                   minutesBetween(order.created_at, completionTime || now)
@@ -543,6 +592,7 @@ export default function ManagerMainPage() {
                         <option value="accepted">Принят</option>
                         <option value="in_progress">В работе</option>
                         <option value="ready">Готов</option>
+                        <option value="delivered">Доставлен</option>
                       </select>
                     </div>
 
@@ -578,6 +628,18 @@ export default function ManagerMainPage() {
                         </span>
                       ))}
                     </div>
+
+                    {order.review ? (
+                      <div className={styles.reviewCard}>
+                        <div className={styles.reviewHeader}>
+                          <span className={styles.reviewTitle}>Отзыв к заказу</span>
+                          <span className={styles.reviewStars}>{renderRatingStars(order.review.rating)}</span>
+                        </div>
+                        <p className={styles.reviewComment}>
+                          {order.review.comment || 'Пользователь оставил оценку без комментария.'}
+                        </p>
+                      </div>
+                    ) : null}
                   </article>
                 );
               })}

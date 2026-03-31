@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import Footer from "@/app/components/Footer/Footer";
 import Header from "@/app/components/Header/Header";
+import PageLoader from "@/app/components/PageLoader/PageLoader";
 import { Wrapper } from "@/app/components/Header/HeaderStyles";
 import {
   Avatar,
@@ -89,6 +90,8 @@ export default function AccountPage() {
       console.error("Logout error:", error);
     }
   };
+
+  if (isLoading) return <PageLoader label="Загружаем профиль..." />;
 
   if (isLoading) return <div>Загрузка</div>;
   if (!profile) return null;

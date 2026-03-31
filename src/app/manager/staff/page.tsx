@@ -3,8 +3,14 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import {
+  fetchManagerEmployeeProfile,
+  fetchManagerEmployees,
+  setManagerEmployeeOpen,
+  type ManagerEmployee,
+  type ManagerEmployeeProfile,
+} from '@/app/api/client/manager';
 import { signOut } from '@/app/api/client/auth';
-import { fetchManagerEmployees, setManagerEmployeeOpen, type ManagerEmployee } from '@/app/api/client/manager';
 import { subscribeManagerWorkspace } from '@/app/api/client/realtime';
 import { useManagerAccess } from '../useManagerAccess';
 import styles from './page.module.scss';
@@ -75,10 +81,67 @@ function LogoutIcon() {
   );
 }
 
+function getEmployeeSearchText(employee: ManagerEmployee) {
+  return [employee.name, employee.email, employee.phone, employee.id]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+function formatWorkedTime(minutes: number) {
+  if (!minutes) {
+    return '0 ч';
+  }
+
+  const hours = Math.floor(minutes / 60);
+  const restMinutes = minutes % 60;
+
+  if (!restMinutes) {
+    return `${hours} ч`;
+  }
+
+  return `${hours} ч ${restMinutes} мин`;
+}
+
+function formatCurrency(value: number | null) {
+  return new Intl.NumberFormat('ru-RU', {
+    style: 'currency',
+    currency: 'RUB',
+    maximumFractionDigits: 0,
+  }).format(value ?? 0);
+}
+
+function formatDateTime(value: string | null) {
+  if (!value) {
+    return 'Нет данных';
+  }
+
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(value));
+}
+
+function renderStars(rating: number | null) {
+  if (rating == null) {
+    return 'Нет оценок';
+  }
+
+  const rounded = Math.round(rating);
+  return `${Array.from({ length: 5 }, (_, index) => (index < rounded ? '★' : '☆')).join('')} ${rating.toFixed(1)}`;
+}
+
 export default function ManagerStaffPage() {
   const router = useRouter();
   const { profile, isChecking } = useManagerAccess();
   const [employees, setEmployees] = useState<ManagerEmployee[]>([]);
+  const [searchValue, setSearchValue] = useState('');
+  const [activeEmployeeId, setActiveEmployeeId] = useState<string | null>(null);
+  const [activeEmployeeProfile, setActiveEmployeeProfile] = useState<ManagerEmployeeProfile | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -129,6 +192,16 @@ export default function ManagerStaffPage() {
     return profile?.email.split('@')[0] || 'Менеджер';
   }, [profile]);
 
+  const filteredEmployees = useMemo(() => {
+    const normalizedQuery = searchValue.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      return employees;
+    }
+
+    return employees.filter((employee) => getEmployeeSearchText(employee).includes(normalizedQuery));
+  }, [employees, searchValue]);
+
   const handleLogout = async () => {
     if (isLoggingOut) {
       return;
@@ -162,7 +235,39 @@ export default function ManagerStaffPage() {
     setEmployees((prev) =>
       prev.map((item) => (item.id === employee.id ? { ...item, isOpen: nextValue } : item))
     );
+    setActiveEmployeeProfile((prev) =>
+      prev && prev.employee.id === employee.id
+        ? {
+            ...prev,
+            employee: {
+              ...prev.employee,
+              isOpen: nextValue,
+            },
+          }
+        : prev
+    );
     setTogglingId(null);
+  };
+
+  const handleOpenProfile = async (employeeId: string) => {
+    if (activeEmployeeId === employeeId && activeEmployeeProfile) {
+      return;
+    }
+
+    setActiveEmployeeId(employeeId);
+    setIsProfileLoading(true);
+
+    const { data, error } = await fetchManagerEmployeeProfile(employeeId);
+
+    if (error) {
+      console.error('Manager employee profile load error:', error);
+      alert(error.message ?? 'Не удалось загрузить профиль курьера');
+      setIsProfileLoading(false);
+      return;
+    }
+
+    setActiveEmployeeProfile(data);
+    setIsProfileLoading(false);
   };
 
   if (isChecking) {
@@ -247,7 +352,7 @@ export default function ManagerStaffPage() {
             <p className={styles.eyebrow}>Команда доставки</p>
             <h1 className={styles.title}>Все курьеры</h1>
             <p className={styles.subtitle}>
-              Здесь видно, кто сейчас в смене и кого отправлять в график.
+              Здесь видно, кто сейчас в смене, можно найти любого курьера и открыть его профиль.
             </p>
           </div>
         </header>
@@ -264,15 +369,156 @@ export default function ManagerStaffPage() {
               {employees.filter((employee) => employee.isOpen).length}
             </strong>
           </article>
+
+          <article className={styles.summaryCard}>
+            <span className={styles.summaryLabel}>Найдено</span>
+            <strong className={styles.summaryValue}>{filteredEmployees.length}</strong>
+          </article>
         </section>
+
+        <section className={styles.searchCard}>
+          <label className={styles.searchField}>
+            <span>Поиск курьера</span>
+            <input
+              type="search"
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
+              placeholder="Имя, почта, телефон или id"
+            />
+          </label>
+        </section>
+
+        {activeEmployeeId ? (
+          <section className={styles.profilePanel}>
+            {isProfileLoading || !activeEmployeeProfile ? (
+              <div className={styles.profileLoading}>Загружаем профиль курьера...</div>
+            ) : (
+              <>
+                <div className={styles.profileTop}>
+                  <div className={styles.profileHero}>
+                    {activeEmployeeProfile.employee.avatar_url ? (
+                      <img
+                        src={activeEmployeeProfile.employee.avatar_url}
+                        alt={activeEmployeeProfile.employee.name ?? 'Курьер'}
+                        className={styles.profileAvatar}
+                      />
+                    ) : (
+                      <div className={styles.profileAvatarFallback}>
+                        {(activeEmployeeProfile.employee.name || activeEmployeeProfile.employee.email || 'К')
+                          .slice(0, 1)
+                          .toUpperCase()}
+                      </div>
+                    )}
+
+                    <div>
+                      <h2 className={styles.profileTitle}>
+                        {activeEmployeeProfile.employee.name || 'Без имени'}
+                      </h2>
+                      <p className={styles.profileSubtitle}>{activeEmployeeProfile.employee.email || 'Без почты'}</p>
+                      <div className={styles.profileTags}>
+                        <span className={`${styles.statusBadge} ${activeEmployeeProfile.employee.isOpen ? styles.statusOpen : styles.statusClosed}`}>
+                          {activeEmployeeProfile.employee.isOpen ? 'Смена открыта' : 'Смена закрыта'}
+                        </span>
+                        <span className={styles.infoTag}>Телефон: {activeEmployeeProfile.employee.phone || 'не указан'}</span>
+                        <span className={styles.infoTag}>В системе: {formatDateTime(activeEmployeeProfile.employee.created_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={styles.closeProfileButton}
+                    onClick={() => {
+                      setActiveEmployeeId(null);
+                      setActiveEmployeeProfile(null);
+                    }}
+                  >
+                    Скрыть профиль
+                  </button>
+                </div>
+
+                <div className={styles.profileStats}>
+                  <article className={styles.profileStatCard}>
+                    <span className={styles.profileStatLabel}>Всего доставил</span>
+                    <strong className={styles.profileStatValue}>{activeEmployeeProfile.stats.deliveredTotal}</strong>
+                  </article>
+                  <article className={styles.profileStatCard}>
+                    <span className={styles.profileStatLabel}>За месяц доставок</span>
+                    <strong className={styles.profileStatValue}>{activeEmployeeProfile.stats.deliveredThisMonth}</strong>
+                  </article>
+                  <article className={styles.profileStatCard}>
+                    <span className={styles.profileStatLabel}>Отработал за месяц</span>
+                    <strong className={styles.profileStatValue}>{formatWorkedTime(activeEmployeeProfile.stats.workedMinutesThisMonth)}</strong>
+                  </article>
+                  <article className={styles.profileStatCard}>
+                    <span className={styles.profileStatLabel}>Личный рейтинг</span>
+                    <strong className={styles.profileStatValue}>{renderStars(activeEmployeeProfile.stats.averageRating)}</strong>
+                    <span className={styles.profileStatHint}>
+                      {activeEmployeeProfile.stats.ratingsCount
+                        ? `${activeEmployeeProfile.stats.ratingsCount} оценок по доставленным заказам`
+                        : 'Пока без отзывов'}
+                    </span>
+                  </article>
+                </div>
+
+                <div className={styles.ordersPanel}>
+                  <div className={styles.ordersPanelHeader}>
+                    <div>
+                      <p className={styles.ordersEyebrow}>Последние доставки</p>
+                      <h3 className={styles.ordersTitle}>Какие заказы отвёз курьер</h3>
+                    </div>
+                    <Link
+                      href={`/manager/schedule?employeeId=${activeEmployeeProfile.employee.id}`}
+                      className={styles.secondaryButton}
+                    >
+                      В график
+                    </Link>
+                  </div>
+
+                  {activeEmployeeProfile.recentOrders.length === 0 ? (
+                    <div className={styles.profileLoading}>У курьера пока нет завершённых доставок.</div>
+                  ) : (
+                    <div className={styles.profileOrdersList}>
+                      {activeEmployeeProfile.recentOrders.map((order) => (
+                        <article key={order.id} className={styles.profileOrderCard}>
+                          <div className={styles.profileOrderTop}>
+                            <div>
+                              <p className={styles.profileOrderId}>Заказ #{order.id.slice(0, 8)}</p>
+                              <p className={styles.profileOrderMeta}>{formatDateTime(order.delivered_at || order.created_at)}</p>
+                            </div>
+                            <strong className={styles.profileOrderAmount}>{formatCurrency(order.total_amount)}</strong>
+                          </div>
+
+                          <p className={styles.profileOrderAddress}>
+                            {[order.street, order.house].filter(Boolean).join(', ') || 'Адрес не указан'}
+                          </p>
+                          <p className={styles.profileOrderMeta}>
+                            Клиент: {order.customer_name || 'не указан'}{order.customer_phone ? ` • ${order.customer_phone}` : ''}
+                          </p>
+
+                          <div className={styles.profileOrderReview}>
+                            <span className={styles.profileOrderRating}>{renderStars(order.rating)}</span>
+                            <p>{order.review_comment || 'Комментария к заказу нет.'}</p>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </section>
+        ) : null}
 
         {isLoading ? (
           <div className={styles.emptyState}>Загружаем сотрудников...</div>
-        ) : employees.length === 0 ? (
-          <div className={styles.emptyState}>Курьеров пока нет.</div>
+        ) : filteredEmployees.length === 0 ? (
+          <div className={styles.emptyState}>
+            {employees.length === 0 ? 'Курьеров пока нет.' : 'По вашему запросу никого не найдено.'}
+          </div>
         ) : (
           <section className={styles.grid}>
-            {employees.map((employee) => (
+            {filteredEmployees.map((employee) => (
               <article key={employee.id} className={styles.employeeCard}>
                 <div className={styles.employeeHeader}>
                   {employee.avatar_url ? (
@@ -296,6 +542,13 @@ export default function ManagerStaffPage() {
                   </span>
 
                   <div className={styles.employeeActions}>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={() => handleOpenProfile(employee.id)}
+                    >
+                      Профиль
+                    </button>
                     <Link href={`/manager/schedule?employeeId=${employee.id}`} className={styles.secondaryButton}>
                       В график
                     </Link>

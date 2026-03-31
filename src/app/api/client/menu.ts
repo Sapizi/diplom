@@ -7,6 +7,8 @@ export type MenuItemType = {
   price: number;
   image_url: string | null;
   category_id?: string;
+  calories?: number | null;
+  is_available?: boolean | null;
 };
 
 export async function fetchMenuItems(sort: 'asc' | 'desc' | '' = '') {
@@ -29,6 +31,8 @@ export async function createMenuItem(payload: {
   price: number;
   category_id: string;
   image_url: string | null;
+  calories?: number | null;
+  is_available?: boolean;
 }) {
   const res = await fetch('/api/admin/menu-items/create', {
     method: 'POST',
@@ -52,6 +56,8 @@ export async function updateMenuItem(
     price: number;
     category_id: string;
     image_url: string | null;
+    calories?: number | null;
+    is_available?: boolean;
   }
 ) {
   const res = await fetch('/api/admin/menu-items/update', {

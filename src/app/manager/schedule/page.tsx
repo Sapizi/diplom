@@ -17,11 +17,56 @@ import { subscribeManagerWorkspace } from '@/app/api/client/realtime';
 import { useManagerAccess } from '../useManagerAccess';
 import styles from './page.module.scss';
 
+const DEFAULT_TIMELINE_START = 8 * 60;
+const DEFAULT_TIMELINE_END = 22 * 60;
+
 function getTodayValue() {
   const now = new Date();
   const offset = now.getTimezoneOffset();
   const localDate = new Date(now.getTime() - offset * 60000);
   return localDate.toISOString().slice(0, 10);
+}
+
+function parseTimeToMinutes(value: string) {
+  const [hours, minutes] = value.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+function formatMinutesToLabel(value: number) {
+  const hours = Math.floor(value / 60);
+  const minutes = value % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+function getEmployeeLabel(employee: ManagerEmployee) {
+  return employee.name || employee.email || employee.phone || employee.id;
+}
+
+function getEmployeeSearchText(employee: ManagerEmployee) {
+  return [employee.name, employee.email, employee.phone, employee.id]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+function getTimelineBounds(shifts: ManagerShift[]) {
+  if (!shifts.length) {
+    return {
+      start: DEFAULT_TIMELINE_START,
+      end: DEFAULT_TIMELINE_END,
+    };
+  }
+
+  const starts = shifts.map((shift) => parseTimeToMinutes(shift.start_time));
+  const ends = shifts.map((shift) => parseTimeToMinutes(shift.end_time));
+
+  const earliest = Math.min(...starts);
+  const latest = Math.max(...ends);
+
+  return {
+    start: Math.min(DEFAULT_TIMELINE_START, Math.floor(earliest / 60) * 60),
+    end: Math.max(DEFAULT_TIMELINE_END, Math.ceil(latest / 60) * 60),
+  };
 }
 
 function MenuIcon() {
@@ -106,6 +151,7 @@ function ManagerSchedulePageContent() {
   const [shifts, setShifts] = useState<ManagerShift[]>([]);
   const [selectedDate, setSelectedDate] = useState(getTodayValue);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
+  const [employeeQuery, setEmployeeQuery] = useState('');
   const [startTime, setStartTime] = useState('10:00');
   const [endTime, setEndTime] = useState('18:00');
   const [comment, setComment] = useState('');
@@ -145,7 +191,7 @@ function ManagerSchedulePageContent() {
       }
 
       setEmployees(employeesData ?? []);
-      setShifts(shiftsData ?? []);
+      setShifts((shiftsData ?? []).sort((a, b) => parseTimeToMinutes(a.start_time) - parseTimeToMinutes(b.start_time)));
       setIsLoading(false);
     };
 
@@ -161,6 +207,17 @@ function ManagerSchedulePageContent() {
     };
   }, [profile, selectedDate]);
 
+  useEffect(() => {
+    if (!selectedEmployeeId || !employees.length) {
+      return;
+    }
+
+    const selectedEmployee = employees.find((employee) => employee.id === selectedEmployeeId);
+    if (selectedEmployee) {
+      setEmployeeQuery(getEmployeeLabel(selectedEmployee));
+    }
+  }, [employees, selectedEmployeeId]);
+
   const displayName = useMemo(() => {
     const profileName = profile?.name?.trim();
     if (profileName) {
@@ -174,6 +231,46 @@ function ManagerSchedulePageContent() {
     () => employees.find((employee) => employee.id === selectedEmployeeId) ?? null,
     [employees, selectedEmployeeId]
   );
+
+  const employeeSuggestions = useMemo(() => {
+    const normalizedQuery = employeeQuery.trim().toLowerCase();
+
+    if (!normalizedQuery) {
+      return employees.slice(0, 6);
+    }
+
+    return employees
+      .filter((employee) => getEmployeeSearchText(employee).includes(normalizedQuery))
+      .slice(0, 6);
+  }, [employeeQuery, employees]);
+
+  const timeline = useMemo(() => {
+    const bounds = getTimelineBounds(shifts);
+    const totalMinutes = Math.max(60, bounds.end - bounds.start);
+    const hours: number[] = [];
+
+    for (let current = bounds.start; current <= bounds.end; current += 60) {
+      hours.push(current);
+    }
+
+    const rows = shifts.map((shift) => {
+      const start = parseTimeToMinutes(shift.start_time);
+      const end = parseTimeToMinutes(shift.end_time);
+      const left = ((start - bounds.start) / totalMinutes) * 100;
+      const width = ((Math.max(end, start + 30) - start) / totalMinutes) * 100;
+
+      return {
+        shift,
+        left: Math.max(0, Math.min(100, left)),
+        width: Math.max(6, Math.min(100, width)),
+      };
+    });
+
+    return {
+      hours,
+      rows,
+    };
+  }, [shifts]);
 
   const handleLogout = async () => {
     if (isLoggingOut) {
@@ -190,6 +287,11 @@ function ManagerSchedulePageContent() {
       console.error('Manager logout error:', error);
       setIsLoggingOut(false);
     }
+  };
+
+  const handleSelectEmployee = (employee: ManagerEmployee) => {
+    setSelectedEmployeeId(employee.id);
+    setEmployeeQuery(getEmployeeLabel(employee));
   };
 
   const handleCreateShift = async (event: React.FormEvent) => {
@@ -217,7 +319,7 @@ function ManagerSchedulePageContent() {
       return;
     }
 
-    setShifts(data ?? []);
+    setShifts((data ?? []).sort((a, b) => parseTimeToMinutes(a.start_time) - parseTimeToMinutes(b.start_time)));
     setComment('');
     setIsSaving(false);
   };
@@ -234,7 +336,7 @@ function ManagerSchedulePageContent() {
       return;
     }
 
-    setShifts(data ?? []);
+    setShifts((data ?? []).sort((a, b) => parseTimeToMinutes(a.start_time) - parseTimeToMinutes(b.start_time)));
     setDeletingId(null);
   };
 
@@ -359,20 +461,38 @@ function ManagerSchedulePageContent() {
                 <input type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} />
               </label>
 
-              <label className={styles.field}>
+              <div className={styles.field}>
                 <span>Курьер</span>
-                <select
-                  value={selectedEmployeeId}
-                  onChange={(event) => setSelectedEmployeeId(event.target.value)}
-                >
-                  <option value="">Выбери сотрудника</option>
-                  {employees.map((employee) => (
-                    <option key={employee.id} value={employee.id}>
-                      {employee.name || employee.email || employee.phone || employee.id}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                <input
+                  type="text"
+                  value={employeeQuery}
+                  onChange={(event) => {
+                    setEmployeeQuery(event.target.value);
+                    setSelectedEmployeeId('');
+                  }}
+                  placeholder="Начни вводить имя, телефон или почту"
+                />
+
+                <div className={styles.employeeLookup}>
+                  {employeeSuggestions.length > 0 ? (
+                    employeeSuggestions.map((employee) => (
+                      <button
+                        key={employee.id}
+                        type="button"
+                        className={`${styles.employeeOption} ${
+                          selectedEmployeeId === employee.id ? styles.employeeOptionActive : ''
+                        }`}
+                        onClick={() => handleSelectEmployee(employee)}
+                      >
+                        <strong>{employee.name || 'Без имени'}</strong>
+                        <span>{employee.email || employee.phone || employee.id}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className={styles.employeeEmpty}>Ничего не найдено. Попробуй другое имя или почту.</div>
+                  )}
+                </div>
+              </div>
 
               <div className={styles.timeGrid}>
                 <label className={styles.field}>
@@ -417,55 +537,109 @@ function ManagerSchedulePageContent() {
         ) : shifts.length === 0 ? (
           <div className={styles.emptyState}>На эту дату смен пока нет.</div>
         ) : (
-          <section className={styles.scheduleList}>
-            {shifts.map((shift) => (
-              <article key={shift.id} className={styles.shiftCard}>
-                <div className={styles.shiftHeader}>
-                  <div>
-                    <p className={styles.shiftTime}>
-                      {shift.start_time.slice(0, 5)} - {shift.end_time.slice(0, 5)}
-                    </p>
-                    <h2 className={styles.shiftEmployee}>
-                      {shift.employee?.name || shift.employee?.email || 'Курьер'}
-                    </h2>
-                    <p className={styles.shiftMeta}>
-                      {shift.employee?.phone || shift.employee?.email || 'Контакты не указаны'}
-                    </p>
+          <>
+            <section className={styles.timelineCard}>
+              <div className={styles.timelineHeader}>
+                <div>
+                  <p className={styles.timelineEyebrow}>График по часам</p>
+                  <h2 className={styles.timelineTitle}>Смены на одной шкале времени</h2>
+                </div>
+                <p className={styles.timelineHint}>Полоса показывает реальное время работы каждого курьера.</p>
+              </div>
+
+              <div className={styles.timeline}>
+                <div className={styles.timelineScale}>
+                  <div className={styles.timelineLabelSpacer} />
+                  <div className={styles.timelineHours}>
+                    {timeline.hours.map((hour) => (
+                      <span key={hour}>{formatMinutesToLabel(hour)}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className={styles.timelineRows}>
+                  {timeline.rows.map(({ shift, left, width }) => (
+                    <div key={shift.id} className={styles.timelineRow}>
+                      <div className={styles.timelineEmployee}>
+                        <strong>{shift.employee?.name || shift.employee?.email || 'Курьер'}</strong>
+                        <span>{shift.employee?.phone || `${shift.start_time.slice(0, 5)} - ${shift.end_time.slice(0, 5)}`}</span>
+                      </div>
+
+                      <div className={styles.timelineTrack}>
+                        {timeline.hours.map((hour) => (
+                          <span
+                            key={`${shift.id}-${hour}`}
+                            className={styles.timelineGridLine}
+                            style={{ left: `${((hour - timeline.hours[0]) / Math.max(60, timeline.hours[timeline.hours.length - 1] - timeline.hours[0])) * 100}%` }}
+                          />
+                        ))}
+
+                        <div
+                          className={styles.timelineBar}
+                          style={{
+                            left: `${left}%`,
+                            width: `${width}%`,
+                          }}
+                        >
+                          <span>{shift.start_time.slice(0, 5)} - {shift.end_time.slice(0, 5)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section className={styles.scheduleList}>
+              {shifts.map((shift) => (
+                <article key={shift.id} className={styles.shiftCard}>
+                  <div className={styles.shiftHeader}>
+                    <div>
+                      <p className={styles.shiftTime}>
+                        {shift.start_time.slice(0, 5)} - {shift.end_time.slice(0, 5)}
+                      </p>
+                      <h2 className={styles.shiftEmployee}>
+                        {shift.employee?.name || shift.employee?.email || 'Курьер'}
+                      </h2>
+                      <p className={styles.shiftMeta}>
+                        {shift.employee?.phone || shift.employee?.email || 'Контакты не указаны'}
+                      </p>
+                    </div>
+
+                    <span
+                      className={`${styles.statusBadge} ${
+                        shift.employee?.isOpen ? styles.statusOpen : styles.statusClosed
+                      }`}
+                    >
+                      {shift.employee?.isOpen ? 'Смена открыта' : 'Смена закрыта'}
+                    </span>
                   </div>
 
-                  <span
-                    className={`${styles.statusBadge} ${
-                      shift.employee?.isOpen ? styles.statusOpen : styles.statusClosed
-                    }`}
-                  >
-                    {shift.employee?.isOpen ? 'Смена открыта' : 'Смена закрыта'}
-                  </span>
-                </div>
+                  {shift.comment ? <p className={styles.shiftComment}>{shift.comment}</p> : null}
 
-                {shift.comment ? <p className={styles.shiftComment}>{shift.comment}</p> : null}
+                  <div className={styles.shiftActions}>
+                    <button
+                      type="button"
+                      className={styles.secondaryButton}
+                      onClick={() => shift.employee && handleToggleShift(shift.employee)}
+                      disabled={!shift.employee || togglingId === shift.employee.id}
+                    >
+                      {shift.employee?.isOpen ? 'Закрыть смену' : 'Открыть смену'}
+                    </button>
 
-                <div className={styles.shiftActions}>
-                  <button
-                    type="button"
-                    className={styles.secondaryButton}
-                    onClick={() => shift.employee && handleToggleShift(shift.employee)}
-                    disabled={!shift.employee || togglingId === shift.employee.id}
-                  >
-                    {shift.employee?.isOpen ? 'Закрыть смену' : 'Открыть смену'}
-                  </button>
-
-                  <button
-                    type="button"
-                    className={styles.deleteButton}
-                    onClick={() => handleDeleteShift(shift.id)}
-                    disabled={deletingId === shift.id}
-                  >
-                    {deletingId === shift.id ? 'Удаляем...' : 'Удалить'}
-                  </button>
-                </div>
-              </article>
-            ))}
-          </section>
+                    <button
+                      type="button"
+                      className={styles.deleteButton}
+                      onClick={() => handleDeleteShift(shift.id)}
+                      disabled={deletingId === shift.id}
+                    >
+                      {deletingId === shift.id ? 'Удаляем...' : 'Удалить'}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </section>
+          </>
         )}
       </section>
     </main>

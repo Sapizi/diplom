@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { getCartItemsCount, readCart, subscribeCart } from '@/app/api/client/cart';
 import {
   HeaderContainer,
   HeaderContent,
@@ -17,6 +19,16 @@ import styles from './Header.module.scss';
 
 export default function Header() {
   const { user, isLoading } = useHeaderAuth();
+  const [cartCount, setCartCount] = useState(0);
+
+  useEffect(() => {
+    const syncCartCount = () => {
+      setCartCount(getCartItemsCount(readCart()));
+    };
+
+    syncCartCount();
+    return subscribeCart(syncCartCount);
+  }, []);
 
   if (isLoading) {
     return (
@@ -32,9 +44,11 @@ export default function Header() {
               </SocialLink>
               <SocialLink href="#">+7-900-084-86-83</SocialLink>
             </SocialLinks>
-            <LogoContainer>
-              <Logo src="/logo.svg" alt="Logotype" />
-            </LogoContainer>
+            <Link href="/" className={styles.logoLink} aria-label="Перейти на главную">
+              <LogoContainer>
+                <Logo src="/logo.svg" alt="Logotype" />
+              </LogoContainer>
+            </Link>
             <UserButtons>
               <UserButtonLink href="/login">Войти</UserButtonLink>
             </UserButtons>
@@ -74,9 +88,11 @@ export default function Header() {
             <SocialLink href="#">+7-900-084-86-83</SocialLink>
           </SocialLinks>
 
-          <LogoContainer>
-            <Logo src="/logo.svg" alt="Logotype" />
-          </LogoContainer>
+          <Link href="/" className={styles.logoLink} aria-label="Перейти на главную">
+            <LogoContainer>
+              <Logo src="/logo.svg" alt="Logotype" />
+            </LogoContainer>
+          </Link>
 
           <UserButtons>
             {user ? (
@@ -86,8 +102,9 @@ export default function Header() {
                     {accountLabel}
                   </Link>
                 </div>
-                <Link href="/user/cart">
+                <Link href="/user/cart" className={styles.cartLink}>
                   <img src="/cart.svg" alt="Cart" />
+                  {cartCount > 0 ? <span className={styles.cartBadge}>{cartCount}</span> : null}
                 </Link>
               </>
             ) : (

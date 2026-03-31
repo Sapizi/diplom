@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSession, onAuthStateChange } from '@/app/api/client/auth';
 import { fetchAuthenticatedRoleProfile, type RoleProfile } from '@/app/api/client/profiles';
@@ -34,11 +34,31 @@ export function useManagerAccess() {
   const router = useRouter();
   const [profile, setProfile] = useState<ManagerProfile | null>(null);
   const [isChecking, setIsChecking] = useState(true);
+  const profileRef = useRef<ManagerProfile | null>(null);
 
   useEffect(() => {
     let isMounted = true;
 
-    const handleSession = async (session: any) => {
+    const setResolvedProfile = (nextProfile: ManagerProfile | null) => {
+      profileRef.current = nextProfile;
+      setProfile(nextProfile);
+    };
+
+    const handleSession = async (session: any, options?: { force?: boolean }) => {
+      const sessionUserId = session?.user?.id ?? null;
+
+      if (!session?.access_token || !sessionUserId) {
+        setResolvedProfile(null);
+        setIsChecking(false);
+        router.replace('/login');
+        return;
+      }
+
+      if (!options?.force && profileRef.current?.id === sessionUserId) {
+        setIsChecking(false);
+        return;
+      }
+
       setIsChecking(true);
 
       const { data, error } = await fetchAuthenticatedRoleProfile(session.access_token);
@@ -49,7 +69,7 @@ export function useManagerAccess() {
 
       if (error) {
         console.error('Manager profile load error:', error);
-        setProfile(null);
+        setResolvedProfile(null);
         setIsChecking(false);
         router.replace('/');
         return;
@@ -58,13 +78,13 @@ export function useManagerAccess() {
       const redirectPath = getRedirectPath(data?.profile ?? null);
 
       if (redirectPath) {
-        setProfile(null);
+        setResolvedProfile(null);
         setIsChecking(false);
         router.replace(redirectPath);
         return;
       }
 
-      setProfile({
+      setResolvedProfile({
         id: data?.user.id ?? session.user.id,
         email: data?.user.email ?? session.user.email ?? '',
         name: data?.profile?.name ?? null,
@@ -88,37 +108,41 @@ export function useManagerAccess() {
         }
 
         if (!session) {
-          setProfile(null);
+          setResolvedProfile(null);
           setIsChecking(false);
           router.replace('/login');
           return;
         }
 
-        await handleSession(session);
+        await handleSession(session, { force: true });
       } catch (error) {
         console.error('Manager auth init error:', error);
         if (!isMounted) {
           return;
         }
-        setProfile(null);
+        setResolvedProfile(null);
         setIsChecking(false);
         router.replace('/login');
       }
     };
 
-    const { data: authListener } = onAuthStateChange(async (_event, session) => {
+    const { data: authListener } = onAuthStateChange(async (event, session) => {
       if (!isMounted) {
         return;
       }
 
-      if (!session) {
-        setProfile(null);
+      if (event === 'SIGNED_OUT' || !session) {
+        setResolvedProfile(null);
         setIsChecking(false);
         router.replace('/login');
         return;
       }
 
-      await handleSession(session);
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        await handleSession(session, {
+          force: event === 'USER_UPDATED' || profileRef.current?.id !== session.user.id,
+        });
+      }
     });
 
     init();
