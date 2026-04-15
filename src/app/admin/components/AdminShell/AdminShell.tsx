@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
-import { signOut } from '@/app/api/client/auth';
+import { signOut, redirectToHome } from '@/app/api/client/auth';
 import type { AdminAccessProfile } from '@/app/admin/useAdminAccess';
 import styles from './AdminShell.module.scss';
 
@@ -112,7 +111,6 @@ export default function AdminShell({
   actions,
   children,
 }: AdminShellProps) {
-  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -136,8 +134,7 @@ export default function AdminShell({
 
     try {
       await signOut();
-      router.push('/');
-      router.refresh();
+      redirectToHome();
     } catch (error) {
       console.error('Admin logout error:', error);
       setIsLoggingOut(false);

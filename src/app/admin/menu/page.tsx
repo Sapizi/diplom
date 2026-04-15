@@ -319,15 +319,18 @@ export default function AdminMenuPage() {
               <MenuItemDesc>
                 <Subtitle>{item.name}</Subtitle>
                 <Description>{item.description}</Description>
-                <Price>{item.price} ₽</Price>
-                <Description>
-                  {item.calories != null ? `${item.calories} ккал` : "Калории не указаны"}
-                </Description>
-                <Description
-                  className={item.is_available === false ? styles.unavailableText : styles.availableText}
-                >
-                  {item.is_available === false ? "Нет в наличии" : "В наличии"}
-                </Description>
+                <div className="" style={{display: 'flex', gap: '20px'}}>
+
+                  <Price>{item.price} ₽</Price>
+                  <Description>
+                    {item.calories != null ? `${item.calories} ккал` : "Калории не указаны"}
+                  </Description>
+                  <Description
+                    className={item.is_available === false ? styles.unavailableText : styles.availableText}
+                  >
+                    {item.is_available === false ? "Нет в наличии" : "В наличии"}
+                  </Description>
+                </div>
               </MenuItemDesc>
               <MenuItemButtons>
                 <LoginButton onClick={() => openEditMenuPopup(item)}>Редактировать</LoginButton>

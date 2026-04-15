@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession, onAuthStateChange } from '@/app/api/client/auth';
+import { getSession, onAuthStateChange, redirectToHome } from '@/app/api/client/auth';
 import { fetchAuthenticatedRoleProfile, type RoleProfile } from '@/app/api/client/profiles';
 import { subscribeCourierProfile } from '@/app/api/client/realtime';
 
@@ -108,8 +108,15 @@ export function useCourerAccess() {
       }
     };
 
-    const { data: authListener } = onAuthStateChange(async (_event, session) => {
+    const { data: authListener } = onAuthStateChange(async (event, session) => {
       if (!isMounted) {
+        return;
+      }
+
+      if (event === 'SIGNED_OUT') {
+        setProfile(null);
+        setIsChecking(true);
+        redirectToHome();
         return;
       }
 

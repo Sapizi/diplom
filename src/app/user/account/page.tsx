@@ -20,7 +20,7 @@ import {
   UserActivity,
   UserGreyBlock,
 } from "./AccountStyles";
-import { getCurrentUser, signOut } from "@/app/api/client/auth";
+import { getCurrentUser, signOut, redirectToHome } from "@/app/api/client/auth";
 import { fetchProfileSummary } from "@/app/api/client/profiles";
 import { fetchOrdersCountByUser } from "@/app/api/client/orders";
 import { fetchAddressesCountByUser } from "@/app/api/client/addresses";
@@ -68,7 +68,11 @@ export default function AccountPage() {
         return;
       }
 
-      setProfile(profileData);
+      setProfile({
+        name: profileData?.name || '',
+        avatar_url: profileData?.avatar_url || null,
+        bonus_points: profileData?.bonus_points ?? 0,
+      });
       if (!ordersError) setOrderCount(ordersCount || 0);
       if (!addressesError) setAddressCount(addressesCount || 0);
       setIsLoading(false);
@@ -84,8 +88,7 @@ export default function AccountPage() {
   const handleLogout = async () => {
     try {
       await signOut();
-      router.push("/");
-      router.refresh();
+      redirectToHome();
     } catch (error) {
       console.error("Logout error:", error);
     }

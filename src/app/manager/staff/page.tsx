@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   fetchManagerEmployeeProfile,
   fetchManagerEmployees,
@@ -10,7 +9,7 @@ import {
   type ManagerEmployee,
   type ManagerEmployeeProfile,
 } from '@/app/api/client/manager';
-import { signOut } from '@/app/api/client/auth';
+import { signOut, redirectToHome } from '@/app/api/client/auth';
 import { subscribeManagerWorkspace } from '@/app/api/client/realtime';
 import { useManagerAccess } from '../useManagerAccess';
 import styles from './page.module.scss';
@@ -135,7 +134,6 @@ function renderStars(rating: number | null) {
 }
 
 export default function ManagerStaffPage() {
-  const router = useRouter();
   const { profile, isChecking } = useManagerAccess();
   const [employees, setEmployees] = useState<ManagerEmployee[]>([]);
   const [searchValue, setSearchValue] = useState('');
@@ -211,8 +209,7 @@ export default function ManagerStaffPage() {
 
     try {
       await signOut();
-      router.push('/');
-      router.refresh();
+      redirectToHome();
     } catch (error) {
       console.error('Manager logout error:', error);
       setIsLoggingOut(false);

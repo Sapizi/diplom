@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { signOut } from '@/app/api/client/auth';
+import { signOut, redirectToHome } from '@/app/api/client/auth';
 import { getCourierDisplayName } from './courierHelpers';
 import styles from './courierFrame.module.scss';
 
@@ -130,7 +129,6 @@ export function CourierMenuButton({
 }
 
 export default function CourierMenu({ profile, isOpen, onClose, active }: CourierMenuProps) {
-  const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const displayName = useMemo(() => getCourierDisplayName(profile), [profile]);
@@ -145,8 +143,7 @@ export default function CourierMenu({ profile, isOpen, onClose, active }: Courie
 
     try {
       await signOut();
-      router.push('/');
-      router.refresh();
+      redirectToHome();
     } catch (error) {
       console.error('Courier logout error:', error);
       setIsLoggingOut(false);

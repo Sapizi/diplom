@@ -1,4 +1,5 @@
 import { supabase } from '../../../../lib/supabase';
+import { requestJson } from './http';
 
 export type ProfileSummary = {
   name: string | null;
@@ -50,68 +51,58 @@ export type AdminUserProfile = {
   isManager: boolean | null;
 };
 
+async function fetchProfileView<T>(view: string, userId?: string) {
+  const params = new URLSearchParams();
+  params.set('view', view);
+
+  if (userId) {
+    params.set('userId', userId);
+  }
+
+  const { data, error } = await requestJson<{ profile: T | null }>(`/api/profiles?${params.toString()}`, {
+    auth: true,
+    fallbackError: 'profile_failed',
+  });
+
+  return {
+    data: data?.profile ?? null,
+    error,
+  };
+}
+
 export async function fetchHeaderProfile(userId: string) {
-  return supabase
-    .from('profiles')
-    .select('name, "isAdmin", "isCourer", "isManager"')
-    .eq('id', userId)
-    .single();
+  return fetchProfileView<HeaderProfile>('header', userId);
 }
 
 export async function fetchRoleProfile(userId: string) {
-  return supabase
-    .from('profiles')
-    .select('name, "isAdmin", "isCourer", "isManager", avatar_url, "isOpen"')
-    .eq('id', userId)
-    .single();
+  return fetchProfileView<RoleProfile>('role', userId);
 }
 
 export async function fetchAuthenticatedRoleProfile(accessToken?: string) {
-  const token =
-    accessToken ||
-    (await supabase.auth.getSession()).data.session?.access_token;
+  const headers = new Headers();
 
-  if (!token) {
-    return { data: null, error: new Error('missing_session') };
+  if (accessToken) {
+    headers.set('Authorization', `Bearer ${accessToken}`);
   }
 
-  const res = await fetch('/api/auth/profile-role', {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    cache: 'no-store',
+  const { data, error } = await requestJson<AuthenticatedRoleProfile>('/api/auth/profile-role', {
+    auth: !accessToken,
+    headers,
+    fallbackError: 'profile_role_failed',
   });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    return { data: null, error: new Error(data?.error ?? 'profile_role_failed') };
-  }
-
-  return { data: data as AuthenticatedRoleProfile, error: null };
-}
-
-async function getAccessToken() {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  return session?.access_token ?? '';
+  return {
+    data,
+    error,
+  };
 }
 
 export async function fetchProfileSummary(userId: string) {
-  return supabase
-    .from('profiles')
-    .select('name, avatar_url, bonus_points')
-    .eq('id', userId)
-    .single();
+  return fetchProfileView<ProfileSummary>('summary', userId);
 }
 
 export async function fetchProfileSettings(userId: string) {
-  return supabase
-    .from('profiles')
-    .select('name, phone, avatar_url')
-    .eq('id', userId)
-    .single();
+  return fetchProfileView<ProfileSettings>('settings', userId);
 }
 
 export async function updateProfileById(
@@ -124,7 +115,23 @@ export async function updateProfileById(
     phone?: string | null;
   }
 ) {
-  return supabase.from('profiles').update(payload).eq('id', userId);
+  const { data, error } = await requestJson<{ profile: ProfileSettings | ProfileSummary | null }>(
+    '/api/profiles',
+    {
+      method: 'PATCH',
+      auth: true,
+      fallbackError: 'update_failed',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId, payload }),
+    }
+  );
+
+  return {
+    data: data?.profile ?? null,
+    error,
+  };
 }
 
 export async function updateProfileByIdAdmin(
@@ -140,27 +147,17 @@ export async function updateProfileByIdAdmin(
     isManager?: boolean | null;
   }
 ) {
-  const token = await getAccessToken();
-
-  if (!token) {
-    return { data: null, error: new Error('missing_session') };
-  }
-
-  const res = await fetch('/api/admin/update-user', {
+  const { data, error } = await requestJson('/api/admin/update-user', {
     method: 'POST',
+    auth: true,
+    fallbackError: 'update_failed',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ userId, payload }),
   });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    return { data: null, error: new Error(data?.error ?? 'update_failed') };
-  }
-
-  return { data, error: null };
+  return { data, error };
 }
 
 export async function createUserByAdmin(payload: {
@@ -170,65 +167,50 @@ export async function createUserByAdmin(payload: {
   phone?: string | null;
   role: 'user' | 'manager' | 'courier';
 }) {
-  const token = await getAccessToken();
-
-  if (!token) {
-    return { data: null, error: new Error('missing_session') };
-  }
-
-  const res = await fetch('/api/admin/create-user', {
+  const { data, error } = await requestJson('/api/admin/create-user', {
     method: 'POST',
+    auth: true,
+    fallbackError: 'create_user_failed',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(payload),
   });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    return { data: null, error: new Error(data?.error ?? 'create_user_failed') };
-  }
-
-  return { data, error: null };
+  return { data, error };
 }
 
 export async function upsertProfileById(
   userId: string,
   payload: Record<string, string | null>
 ) {
-  return supabase.from('profiles').upsert({ id: userId, ...payload });
+  return updateProfileById(userId, payload);
 }
 
 export async function deleteProfileById(userId: string) {
-  const token = await getAccessToken();
-
-  if (!token) {
-    return { data: null, error: new Error('missing_session') };
-  }
-
-  const res = await fetch('/api/admin/delete-user', {
+  const { data, error } = await requestJson('/api/admin/delete-user', {
     method: 'POST',
+    auth: true,
+    fallbackError: 'delete_failed',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ userId }),
   });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    return { data: null, error: new Error(data?.error ?? 'delete_failed') };
-  }
-
-  return { data, error: null };
+  return { data, error };
 }
 
 export async function fetchAdminUsers() {
-  return supabase
-    .from('profiles')
-    .select('id, name, email, phone, avatar_url, bonus_points, created_at, "isOpen", "isAdmin", "isCourer", "isManager"')
-    .order('created_at', { ascending: true });
+  const { data, error } = await requestJson<{ users: AdminUserProfile[] }>('/api/admin/users', {
+    auth: true,
+    fallbackError: 'admin_users_failed',
+  });
+
+  return {
+    data: data?.users ?? [],
+    error,
+  };
 }
 
 export async function uploadAvatar(fileName: string, file: File) {
@@ -240,17 +222,11 @@ export function getAvatarPublicUrl(fileName: string) {
 }
 
 export async function getIsAdmin(userId: string) {
-  return supabase
-    .from('profiles')
-    .select('isAdmin')
-    .eq('id', userId)
-    .single();
+  const { data, error } = await fetchProfileView<{ isAdmin: boolean | null }>('is-admin', userId);
+
+  return { data, error };
 }
 
 export async function fetchUserBonusPoints(userId: string) {
-  return supabase
-    .from('profiles')
-    .select('bonus_points')
-    .eq('id', userId)
-    .single();
+  return fetchProfileView<{ bonus_points: number | null }>('bonus', userId);
 }

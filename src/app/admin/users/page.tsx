@@ -324,7 +324,7 @@ export default function AdminUsersPage() {
     setOrdersLoading(true);
     setOrdersPopupOpen(true);
 
-    const { data, error } = await fetchOrdersWithItemsByUser(userId);
+    const { data, error } = await fetchOrdersWithItemsByUser(userId, 'all');
     if (error) {
       alert('Ошибка загрузки заказов');
       setCurrentOrders([]);

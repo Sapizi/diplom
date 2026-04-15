@@ -1,5 +1,4 @@
-import { supabase } from '../../../../lib/supabase';
-import { getSession } from './auth';
+import { requestJson } from './http';
 
 export type AdminOverviewStats = {
   users: number;
@@ -15,61 +14,41 @@ export type AdminOverviewStats = {
 };
 
 export async function fetchDashboardCounts() {
-  const { count: users } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true });
+  const { data, error } = await fetchAdminOverview();
 
-  const { count: menu } = await supabase
-    .from('menu_items')
-    .select('*', { count: 'exact', head: true });
+  if (error || !data) {
+    return { users: 0, menu: 0, orders: 0 };
+  }
 
-  const { count: orders } = await supabase
-    .from('orders')
-    .select('*', { count: 'exact', head: true });
-
-  return { users: users ?? 0, menu: menu ?? 0, orders: orders ?? 0 };
-}
-
-async function getAccessToken() {
-  const {
-    data: { session },
-  } = await getSession();
-
-  return session?.access_token ?? '';
+  return {
+    users: data.users,
+    menu: data.menu,
+    orders: data.orders,
+  };
 }
 
 export async function fetchAdminOverview() {
-  const token = await getAccessToken();
-
-  if (!token) {
-    return { data: null, error: new Error('missing_session') };
-  }
-
-  const res = await fetch('/api/admin/overview', {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    cache: 'no-store',
+  const { data, error } = await requestJson<AdminOverviewStats>('/api/admin/overview', {
+    auth: true,
+    fallbackError: 'admin_overview_failed',
   });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    return { data: null, error: new Error(data?.error ?? 'admin_overview_failed') };
+  if (error || !data) {
+    return { data: null, error };
   }
 
   return {
     data: {
-      users: Number(data?.users ?? 0),
-      employees: Number(data?.employees ?? 0),
-      managers: Number(data?.managers ?? 0),
-      couriers: Number(data?.couriers ?? 0),
-      menu: Number(data?.menu ?? 0),
-      orders: Number(data?.orders ?? 0),
-      todayOrders: Number(data?.todayOrders ?? 0),
-      todayAverageRating:
-        data?.todayAverageRating == null ? null : Number(data.todayAverageRating),
-      todayReviewsCount: Number(data?.todayReviewsCount ?? 0),
-      onShiftEmployees: Number(data?.onShiftEmployees ?? 0),
+      users: Number(data.users ?? 0),
+      employees: Number(data.employees ?? 0),
+      managers: Number(data.managers ?? 0),
+      couriers: Number(data.couriers ?? 0),
+      menu: Number(data.menu ?? 0),
+      orders: Number(data.orders ?? 0),
+      todayOrders: Number(data.todayOrders ?? 0),
+      todayAverageRating: data.todayAverageRating == null ? null : Number(data.todayAverageRating),
+      todayReviewsCount: Number(data.todayReviewsCount ?? 0),
+      onShiftEmployees: Number(data.onShiftEmployees ?? 0),
     } satisfies AdminOverviewStats,
     error: null,
   };

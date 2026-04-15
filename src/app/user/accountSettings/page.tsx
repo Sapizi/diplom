@@ -48,7 +48,7 @@ export default function AccountSettings() {
       const { data, error: profileError } = await fetchProfileSettings(user.id);
       if (!isMounted) return;
 
-      if (profileError && profileError.code !== "PGRST116") {
+      if (profileError) {
         setError("Ошибка загрузки профиля");
       } else {
         setName(data?.name || "");

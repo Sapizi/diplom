@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { Suspense, useEffect, useMemo, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { signOut } from '@/app/api/client/auth';
+import { useSearchParams } from 'next/navigation';
+import { signOut, redirectToHome } from '@/app/api/client/auth';
 import {
   createManagerShift,
   deleteManagerShift,
@@ -144,7 +144,6 @@ function formatScheduleDate(value: string) {
 }
 
 function ManagerSchedulePageContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { profile, isChecking } = useManagerAccess();
   const [employees, setEmployees] = useState<ManagerEmployee[]>([]);
@@ -281,8 +280,7 @@ function ManagerSchedulePageContent() {
 
     try {
       await signOut();
-      router.push('/');
-      router.refresh();
+      redirectToHome();
     } catch (error) {
       console.error('Manager logout error:', error);
       setIsLoggingOut(false);

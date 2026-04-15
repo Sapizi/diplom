@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession, onAuthStateChange } from '@/app/api/client/auth';
+import { getSession, onAuthStateChange, redirectToHome } from '@/app/api/client/auth';
 import { fetchAuthenticatedRoleProfile, type RoleProfile } from '@/app/api/client/profiles';
 
 type ManagerProfile = RoleProfile & {
@@ -131,7 +131,14 @@ export function useManagerAccess() {
         return;
       }
 
-      if (event === 'SIGNED_OUT' || !session) {
+      if (event === 'SIGNED_OUT') {
+        setResolvedProfile(null);
+        setIsChecking(true);
+        redirectToHome();
+        return;
+      }
+
+      if (!session) {
         setResolvedProfile(null);
         setIsChecking(false);
         router.replace('/login');

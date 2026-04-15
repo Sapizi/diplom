@@ -2,8 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { signOut } from '@/app/api/client/auth';
+import { signOut, redirectToHome } from '@/app/api/client/auth';
 import {
   fetchAllOrdersWithItems,
   updateOrderStatus,
@@ -268,7 +267,6 @@ function matchesOrderSearch(order: OrderType, query: string) {
 }
 
 export default function ManagerMainPage() {
-  const router = useRouter();
   const { profile, isChecking } = useManagerAccess();
   const [orders, setOrders] = useState<OrderType[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(true);
@@ -375,8 +373,7 @@ export default function ManagerMainPage() {
 
     try {
       await signOut();
-      router.push('/');
-      router.refresh();
+      redirectToHome();
     } catch (error) {
       console.error('Manager logout error:', error);
       setIsLoggingOut(false);

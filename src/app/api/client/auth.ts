@@ -39,6 +39,12 @@ export async function signOut() {
   return supabase.auth.signOut();
 }
 
+export function redirectToHome() {
+  if (typeof window !== 'undefined') {
+    window.location.replace('/');
+  }
+}
+
 export function onAuthStateChange(
   callback: (event: AuthChangeEvent, session: Session | null) => void | Promise<void>
 ) {

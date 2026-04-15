@@ -1,4 +1,4 @@
-import { supabase } from '../../../../lib/supabase';
+import { requestJson } from './http';
 
 export type CategoryType = {
   id: string;
@@ -6,20 +6,26 @@ export type CategoryType = {
 };
 
 export async function fetchCategories() {
-  return supabase.from('categories').select('id, name').order('name');
+  const { data, error } = await requestJson<{ categories: CategoryType[] }>('/api/categories', {
+    fallbackError: 'categories_failed',
+  });
+
+  return {
+    data: data?.categories ?? [],
+    error,
+  };
 }
 
 export async function createCategory(name: string) {
-  const res = await fetch('/api/admin/categories/create', {
+  const { data, error } = await requestJson('/api/admin/categories/create', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    auth: true,
+    fallbackError: 'create_failed',
+    headers: {
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({ name }),
   });
 
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    return { data: null, error: new Error(data?.error ?? 'create_failed') };
-  }
-
-  return { data, error: null };
+  return { data, error };
 }
