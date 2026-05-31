@@ -1,0 +1,32 @@
+.error {
+  margin-bottom: 12px;
+  color: #c62828;
+  text-align: center;
+}
+
+.success {
+  margin-bottom: 12px;
+  color: #2e7d32;
+  text-align: center;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-top: 24px;
+}
+
+.description {
+  max-width: 496px;
+  color: #3a3a3a;
+  font-size: 15px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.loginHint {
+  margin-top: 12px;
+  text-align: center;
+}
