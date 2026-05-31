@@ -151,6 +151,57 @@
   flex-wrap: wrap;
 }
 
+.compositionBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.compositionButton {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgba(249, 144, 38, 0.45);
+  border-radius: 999px;
+  background: rgba(249, 144, 38, 0.1);
+  color: #9c5300;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.compositionButtonActive {
+  border-color: #f99026;
+  background: #f99026;
+  color: #fff;
+}
+
+.compositionPanel {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(249, 144, 38, 0.18);
+  border-radius: 16px;
+  background: #fff7ef;
+}
+
+.compositionLabel {
+  display: inline-block;
+  margin-bottom: 6px;
+  color: #9c5300;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.compositionText {
+  color: #4b4038;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .calories {
   color: #666;
   font-size: 14px;

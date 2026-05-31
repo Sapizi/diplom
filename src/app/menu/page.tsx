@@ -30,6 +30,7 @@ type MenuItemType = {
   id: string;
   name: string;
   description: string;
+  composition?: string | null;
   price: number;
   image_url: string | null;
   category_id?: string | null;
@@ -72,6 +73,7 @@ export default function MenuPage() {
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [availableOnly, setAvailableOnly] = useState(false);
+  const [openedCompositionId, setOpenedCompositionId] = useState<string | null>(null);
 
   useEffect(() => {
     const syncCart = () => {
@@ -84,7 +86,7 @@ export default function MenuPage() {
 
   useEffect(() => {
     let isMounted = true;
-    const cacheKey = `menu_cache_${sort || "default"}`;
+    const cacheKey = `menu_cache_v2_${sort || "default"}`;
 
     const cachedRaw = localStorage.getItem(cacheKey);
     if (cachedRaw) {
@@ -217,6 +219,10 @@ export default function MenuPage() {
     setCart(changeCartItemQuantity(cartItemBase, delta));
   };
 
+  const handleToggleComposition = (itemId: string) => {
+    setOpenedCompositionId((current) => (current === itemId ? null : itemId));
+  };
+
   if (loading) {
     return <PageLoader label="Загружаем меню..." />;
   }
@@ -310,6 +316,9 @@ export default function MenuPage() {
             {filteredMenu.map((item) => {
               const quantity = getCartQuantityById(cart, item.id);
               const isAvailable = item.is_available !== false;
+              const composition = item.composition?.trim() ?? "";
+              const hasComposition = composition.length > 0;
+              const isCompositionOpen = openedCompositionId === item.id;
 
               return (
                 <MenuItem key={item.id} className={styles.menuItemCard}>
@@ -331,6 +340,28 @@ export default function MenuPage() {
                     </div>
 
                     <Description>{item.description}</Description>
+
+                    {hasComposition ? (
+                      <div className={styles.compositionBlock}>
+                        <button
+                          type="button"
+                          className={`${styles.compositionButton} ${
+                            isCompositionOpen ? styles.compositionButtonActive : ""
+                          }`}
+                          onClick={() => handleToggleComposition(item.id)}
+                          aria-expanded={isCompositionOpen}
+                        >
+                          {isCompositionOpen ? "Скрыть состав" : "Состав"}
+                        </button>
+
+                        {isCompositionOpen ? (
+                          <div className={styles.compositionPanel}>
+                            <span className={styles.compositionLabel}>Состав</span>
+                            <p className={styles.compositionText}>{composition}</p>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
 
                     <div className={styles.metaRow}>
                       <Price>{item.price} ₽</Price>

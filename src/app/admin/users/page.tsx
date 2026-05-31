@@ -349,7 +349,7 @@ export default function AdminUsersPage() {
       profile={profile}
       active="users"
       title="Пользователи и сотрудники"
-      subtitle="Ручное создание аккаунтов, назначение ролей менеджера или курьера и быстрый доступ к истории заказов."
+      subtitle=""
       actions={
         <button type="button" className={styles.primaryAction} onClick={openCreateModal}>
           Добавить пользователя

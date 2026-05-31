@@ -41,6 +41,7 @@ type MenuItemType = {
   id: string;
   name: string;
   description: string;
+  composition?: string | null;
   price: number;
   image_url: string | null;
   category_id: string;
@@ -63,6 +64,7 @@ export default function AdminMenuPage() {
   const [editingItem, setEditingItem] = useState<MenuItemType | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [composition, setComposition] = useState('');
   const [price, setPrice] = useState('');
   const [calories, setCalories] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -146,6 +148,7 @@ export default function AdminMenuPage() {
     setEditingItem(null);
     setName('');
     setDescription('');
+    setComposition('');
     setPrice('');
     setCalories('');
     setCategoryId('');
@@ -158,6 +161,7 @@ export default function AdminMenuPage() {
     setEditingItem(item);
     setName(item.name);
     setDescription(item.description);
+    setComposition(item.composition ?? '');
     setPrice(item.price.toString());
     setCalories(item.calories != null ? item.calories.toString() : '');
     setCategoryId(item.category_id);
@@ -191,6 +195,7 @@ export default function AdminMenuPage() {
     const payload = {
       name,
       description,
+      composition: composition.trim() || null,
       price: Number(price),
       calories: calories.trim() ? Number(calories) : null,
       category_id: resolvedCategoryId,
@@ -220,6 +225,7 @@ export default function AdminMenuPage() {
     setEditingItem(null);
     setName('');
     setDescription('');
+    setComposition('');
     setPrice('');
     setCalories('');
     setCategoryId('');
@@ -269,7 +275,7 @@ export default function AdminMenuPage() {
       profile={profile}
       active="menu"
       title="Меню"
-      subtitle="Управление позициями, категориями, калориями и доступностью блюд."
+      subtitle=""
       actions={
         <>
           <button type="button" className={styles.primaryAction} onClick={openCreateMenuPopup}>
@@ -319,6 +325,11 @@ export default function AdminMenuPage() {
               <MenuItemDesc>
                 <Subtitle>{item.name}</Subtitle>
                 <Description>{item.description}</Description>
+                {item.composition?.trim() ? (
+                  <Description className={styles.compositionPreview}>
+                    Состав: {item.composition}
+                  </Description>
+                ) : null}
                 <div className="" style={{display: 'flex', gap: '20px'}}>
 
                   <Price>{item.price} ₽</Price>
@@ -352,6 +363,11 @@ export default function AdminMenuPage() {
                 type="file"
                 accept="image/*"
                 onChange={(e) => setImage(e.target.files?.[0] || null)}
+              />
+              <PopupTextarea
+                placeholder="Состав"
+                value={composition}
+                onChange={(e) => setComposition(e.target.value)}
               />
               <PopupInput
                 placeholder="Название"

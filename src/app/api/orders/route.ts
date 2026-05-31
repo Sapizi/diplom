@@ -29,11 +29,12 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const scope = resolveScope(searchParams.get('scope'));
     const view = resolveView(searchParams.get('view'));
-    const requestedUserId = searchParams.get('userId')?.trim() || user.id;
+    const explicitUserId = searchParams.get('userId')?.trim() || null;
+    const requestedUserId = scope === 'all' ? explicitUserId : explicitUserId || user.id;
     const requestedOrderId = searchParams.get('orderId')?.trim();
     const isPrivileged = Boolean(profile?.isAdmin || profile?.isManager);
 
-    if ((scope === 'all' || requestedUserId !== user.id) && !isPrivileged) {
+    if ((scope === 'all' || (requestedUserId && requestedUserId !== user.id)) && !isPrivileged) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

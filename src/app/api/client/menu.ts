@@ -5,6 +5,7 @@ export type MenuItemType = {
   id: string;
   name: string;
   description: string;
+  composition?: string | null;
   price: number;
   image_url: string | null;
   category_id: string;
@@ -48,6 +49,7 @@ export async function fetchAdminMenuItems() {
 export async function createMenuItem(payload: {
   name: string;
   description: string;
+  composition?: string | null;
   price: number;
   category_id: string;
   image_url: string | null;
@@ -70,6 +72,7 @@ export async function updateMenuItem(
   payload: {
     name: string;
     description: string;
+    composition?: string | null;
     price: number;
     category_id: string;
     image_url: string | null;

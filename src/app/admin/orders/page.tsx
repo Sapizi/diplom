@@ -138,7 +138,7 @@ export default function AdminOrdersPage() {
       profile={profile}
       active="orders"
       title="Заказы"
-      subtitle="Полный список заказов с поиском по id и быстрым обновлением статуса."
+      subtitle=""
     >
       <section className={styles.panel}>
         <div className={styles.panelHeader}>

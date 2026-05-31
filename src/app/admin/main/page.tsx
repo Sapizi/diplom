@@ -137,7 +137,7 @@ export default function AdminMainPage() {
       profile={profile}
       active="main"
       title="Главная"
-      subtitle="Ключевые показатели за день и быстрые переходы к управлению пользователями, меню и заказами."
+      subtitle=""
     >
       <section className={styles.metrics}>
         {importantMetrics.map((metric) => (
