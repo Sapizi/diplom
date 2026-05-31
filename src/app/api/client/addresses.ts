@@ -40,8 +40,8 @@ export function getEmptyDeliveryAddress(): DeliveryAddressInput {
 export function formatAddressTitle(address: Pick<DeliveryAddress, 'city' | 'street' | 'house'>) {
   return [
     normalizeText(address.city),
-    address.street ? `СѓР». ${address.street}` : '',
-    address.house ? `Рґ. ${address.house}` : '',
+    address.street ? `ул. ${address.street}` : '',
+    address.house ? `д. ${address.house}` : '',
   ]
     .filter(Boolean)
     .join(', ');
@@ -51,9 +51,9 @@ export function formatAddressDetails(
   address: Pick<DeliveryAddress, 'entrance' | 'apartment' | 'floor' | 'comment'>
 ) {
   const parts = [
-    address.entrance ? `РїРѕРґСЉРµР·Рґ ${address.entrance}` : '',
-    address.apartment ? `РєРІ. ${address.apartment}` : '',
-    address.floor ? `СЌС‚Р°Р¶ ${address.floor}` : '',
+    address.entrance ? `подъезд ${address.entrance}` : '',
+    address.apartment ? `кв. ${address.apartment}` : '',
+    address.floor ? `этаж ${address.floor}` : '',
   ].filter(Boolean);
 
   if (address.comment) {
