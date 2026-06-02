@@ -108,8 +108,12 @@ export function useCourerAccess() {
       }
     };
 
-    const { data: authListener } = onAuthStateChange(async (event, session) => {
+    const { data: authListener } = onAuthStateChange((event, session) => {
       if (!isMounted) {
+        return;
+      }
+
+      if (event === 'INITIAL_SESSION') {
         return;
       }
 
@@ -127,10 +131,12 @@ export function useCourerAccess() {
         return;
       }
 
-      await handleSession(session);
+      window.setTimeout(() => {
+        void handleSession(session);
+      }, 0);
     });
 
-    init();
+    void init();
 
     return () => {
       isMounted = false;

@@ -1,11 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { Session } from '@supabase/supabase-js';
 import { fetchAuthenticatedRoleProfile } from '@/app/api/client/profiles';
 import { getSession } from '@/app/api/client/auth';
 import styles from './PushNotificationsManager.module.scss';
 
 type PermissionState = 'unsupported' | 'idle' | 'prompt' | 'granted' | 'denied';
+type IdleWindow = Window &
+  typeof globalThis & {
+    requestIdleCallback?: (
+      callback: IdleRequestCallback,
+      options?: IdleRequestOptions
+    ) => number;
+    cancelIdleCallback?: (handle: number) => void;
+  };
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -37,8 +46,14 @@ export default function PushNotificationsManager() {
 
   useEffect(() => {
     let isMounted = true;
+    let idleHandle = 0;
+    const idleWindow = window as IdleWindow;
 
-    const init = async () => {
+    const syncCustomerState = async (session: Session | null) => {
+      if (!session?.access_token) {
+        return;
+      }
+
       if (
         typeof window === 'undefined' ||
         !('serviceWorker' in navigator) ||
@@ -56,14 +71,6 @@ export default function PushNotificationsManager() {
         if (isMounted) {
           setPermission('unsupported');
         }
-        return;
-      }
-
-      const {
-        data: { session },
-      } = await getSession();
-
-      if (!isMounted || !session) {
         return;
       }
 
@@ -113,10 +120,36 @@ export default function PushNotificationsManager() {
       setPermission('prompt');
     };
 
-    init();
+    const init = async () => {
+      const {
+        data: { session },
+      } = await getSession();
+
+      if (!isMounted || !session) {
+        return;
+      }
+
+      await syncCustomerState(session);
+    };
+
+    if (typeof window !== 'undefined' && typeof idleWindow.requestIdleCallback === 'function') {
+      idleHandle = idleWindow.requestIdleCallback(() => {
+        void init();
+      }, { timeout: 1500 });
+    } else {
+      idleHandle = window.setTimeout(() => {
+        void init();
+      }, 250);
+    }
+
 
     return () => {
       isMounted = false;
+      if (typeof window !== 'undefined' && typeof idleWindow.cancelIdleCallback === 'function') {
+        idleWindow.cancelIdleCallback(idleHandle);
+      } else {
+        window.clearTimeout(idleHandle);
+      }
     };
   }, []);
 

@@ -1,17 +1,51 @@
 import { supabase } from '../../../../lib/supabase';
 import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 
+type SessionResult = Awaited<ReturnType<typeof supabase.auth.getSession>>;
+
+let cachedSession: Session | null | undefined;
+let sessionRequest: Promise<SessionResult> | null = null;
+
+function setCachedSession(session: Session | null) {
+  cachedSession = session;
+}
+
 export async function getSession() {
-  return supabase.auth.getSession();
+  if (cachedSession !== undefined) {
+    if (cachedSession) {
+      return {
+        data: { session: cachedSession },
+        error: null,
+      } as SessionResult;
+    }
+
+    return {
+      data: { session: null },
+      error: null,
+    } as SessionResult;
+  }
+
+  if (!sessionRequest) {
+    sessionRequest = supabase.auth
+      .getSession()
+      .then((result) => {
+        setCachedSession(result.data.session ?? null);
+        return result;
+      })
+      .finally(() => {
+        sessionRequest = null;
+      });
+  }
+
+  return sessionRequest;
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-  const { data, error } = await supabase.auth.getUser();
-  if (error) {
-    console.error('Auth getUser error:', error);
-    return null;
-  }
-  return data.user ?? null;
+  const {
+    data: { session },
+  } = await getSession();
+
+  return session?.user ?? null;
 }
 
 export async function signInWithPassword(email: string, password: string) {
@@ -56,5 +90,8 @@ export function redirectToHome() {
 export function onAuthStateChange(
   callback: (event: AuthChangeEvent, session: Session | null) => void | Promise<void>
 ) {
-  return supabase.auth.onAuthStateChange(callback);
+  return supabase.auth.onAuthStateChange((event, session) => {
+    setCachedSession(session);
+    return callback(event, session);
+  });
 }

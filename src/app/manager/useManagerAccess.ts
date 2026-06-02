@@ -126,8 +126,12 @@ export function useManagerAccess() {
       }
     };
 
-    const { data: authListener } = onAuthStateChange(async (event, session) => {
+    const { data: authListener } = onAuthStateChange((event, session) => {
       if (!isMounted) {
+        return;
+      }
+
+      if (event === 'INITIAL_SESSION') {
         return;
       }
 
@@ -146,13 +150,15 @@ export function useManagerAccess() {
       }
 
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        await handleSession(session, {
-          force: event === 'USER_UPDATED' || profileRef.current?.id !== session.user.id,
-        });
+        window.setTimeout(() => {
+          void handleSession(session, {
+            force: event === 'USER_UPDATED' || profileRef.current?.id !== session.user.id,
+          });
+        }, 0);
       }
     });
 
-    init();
+    void init();
 
     return () => {
       isMounted = false;

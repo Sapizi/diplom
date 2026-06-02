@@ -4,6 +4,11 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+type AuthClaims = {
+  sub?: string;
+  email?: string;
+};
+
 function createServiceSupabase() {
   if (!supabaseUrl || !supabaseServiceKey) {
     throw new Error('Missing Supabase service role key');
@@ -25,18 +30,21 @@ export async function GET(req: NextRequest) {
 
     const supabase = createServiceSupabase();
     const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser(token);
+      data,
+      error: claimsError,
+    } = await supabase.auth.getClaims(token);
 
-    if (userError || !user) {
+    const claims = data?.claims as AuthClaims | undefined;
+    const userId = typeof claims?.sub === 'string' ? claims.sub : null;
+
+    if (claimsError || !userId) {
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('name, "isAdmin", "isCourer", "isManager", avatar_url, "isOpen"')
-      .eq('id', user.id)
+      .eq('id', userId)
       .maybeSingle();
 
     if (profileError) {
@@ -45,8 +53,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       user: {
-        id: user.id,
-        email: user.email ?? '',
+        id: userId,
+        email: typeof claims?.email === 'string' ? claims.email : '',
       },
       profile,
     });

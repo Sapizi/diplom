@@ -37,6 +37,11 @@ export type AuthenticatedRoleProfile = {
   profile: RoleProfile | null;
 };
 
+type ProfileRoleResult = {
+  data: AuthenticatedRoleProfile | null;
+  error: Error | null;
+};
+
 export type AdminUserProfile = {
   id: string;
   name: string | null;
@@ -50,6 +55,16 @@ export type AdminUserProfile = {
   isCourer: boolean | null;
   isManager: boolean | null;
 };
+
+const AUTH_ROLE_CACHE_TTL_MS = 10_000;
+const authRoleCache = new Map<
+  string,
+  {
+    expiresAt: number;
+    value: ProfileRoleResult;
+  }
+>();
+const authRoleRequests = new Map<string, Promise<ProfileRoleResult>>();
 
 async function fetchProfileView<T>(view: string, userId?: string) {
   const params = new URLSearchParams();
@@ -79,22 +94,48 @@ export async function fetchRoleProfile(userId: string) {
 }
 
 export async function fetchAuthenticatedRoleProfile(accessToken?: string) {
+  const cacheKey = accessToken ? `token:${accessToken}` : 'session';
+  const cachedEntry = authRoleCache.get(cacheKey);
+
+  if (cachedEntry && cachedEntry.expiresAt > Date.now()) {
+    return cachedEntry.value;
+  }
+
+  const pendingRequest = authRoleRequests.get(cacheKey);
+  if (pendingRequest) {
+    return pendingRequest;
+  }
+
   const headers = new Headers();
 
   if (accessToken) {
     headers.set('Authorization', `Bearer ${accessToken}`);
   }
 
-  const { data, error } = await requestJson<AuthenticatedRoleProfile>('/api/auth/profile-role', {
+  const request = requestJson<AuthenticatedRoleProfile>('/api/auth/profile-role', {
     auth: !accessToken,
     headers,
     fallbackError: 'profile_role_failed',
-  });
+  })
+    .then(({ data, error }) => {
+      const result = { data, error };
 
-  return {
-    data,
-    error,
-  };
+      if (!error) {
+        authRoleCache.set(cacheKey, {
+          expiresAt: Date.now() + AUTH_ROLE_CACHE_TTL_MS,
+          value: result,
+        });
+      }
+
+      return result;
+    })
+    .finally(() => {
+      authRoleRequests.delete(cacheKey);
+    });
+
+  authRoleRequests.set(cacheKey, request);
+
+  return request;
 }
 
 export async function fetchProfileSummary(userId: string) {
