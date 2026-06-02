@@ -4,23 +4,52 @@ import {
     MenuBlockContentLeft,
     MenuBlockTitle, MenuBlockDescription, MenuBlockLink, MenuBlockContentRight, MenuBlockImages, MenuBlockImage
 } from "@/app/components/MenuBlocks/MenuBlock/MenuBlockStyles";
+import type { MenuBlockItem } from "@/app/components/MenuBlocks/menuBlocksContent";
 
-export default function MenuBlock(){
+export default function MenuBlock({
+    id,
+    title,
+    description,
+    images,
+    href = '/menu',
+    linkLabel = 'Смотреть всё',
+    reverse = false,
+}: MenuBlockItem){
+    const textContent = (
+        <MenuBlockContentLeft>
+            <MenuBlockTitle>{title}</MenuBlockTitle>
+            <MenuBlockDescription>{description}</MenuBlockDescription>
+            <MenuBlockLink href={href}>{linkLabel}</MenuBlockLink>
+        </MenuBlockContentLeft>
+    );
+
+    const imageContent = (
+        <MenuBlockContentRight>
+            <MenuBlockImages>
+                {images.map((imageSrc, index) => (
+                    <MenuBlockImage
+                        key={`${title}-${imageSrc}-${index}`}
+                        src={imageSrc}
+                        alt={`${title} ${index + 1}`}
+                    />
+                ))}
+            </MenuBlockImages>
+        </MenuBlockContentRight>
+    );
+
     return(
-        <>
-            <MenuBlockMaket>
-                <MenuBlockContentLeft>
-                    <MenuBlockTitle>Комбо обеды</MenuBlockTitle>
-                    <MenuBlockDescription>Комбо-обеды — это удобное и выгодное решение для тех, кто хочет получить полноценный приём пищи без лишних раздумий. В одном наборе собраны самые удачные позиции меню, которые идеально дополняют друг друга и дарят ощущение сытного и сбалансированного обеда. Горячие блюда, свежие добавки и напитки объединяются в продуманные сочетания, позволяя насладиться разнообразием вкусов за одну цену.</MenuBlockDescription>
-                    <MenuBlockLink href={'/menu'}>Смотреть всё</MenuBlockLink>
-                </MenuBlockContentLeft>
-                <MenuBlockContentRight>
-                    <MenuBlockImages>
-                        <MenuBlockImage src={'/cesadilia.svg'}/>
-                        <MenuBlockImage src={'/burrito.svg'}/>
-                    </MenuBlockImages>
-                </MenuBlockContentRight>
-            </MenuBlockMaket>
-        </>
+        <MenuBlockMaket id={id}>
+            {reverse ? (
+                <>
+                    {imageContent}
+                    {textContent}
+                </>
+            ) : (
+                <>
+                    {textContent}
+                    {imageContent}
+                </>
+            )}
+        </MenuBlockMaket>
     )
 }

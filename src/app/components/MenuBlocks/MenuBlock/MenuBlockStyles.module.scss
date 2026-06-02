@@ -4,6 +4,7 @@
   gap: 106px;
   width: min(1263px, 100%);
   min-height: 229px;
+  scroll-margin-top: 32px;
 }
 
 .menuBlockContentLeft {
@@ -47,9 +48,14 @@
 }
 
 .menuBlockImage {
-  width: min(263px, 100%);
-  height: auto;
-  aspect-ratio: 263 / 229;
+  width: 263px;
+  min-width: 263px;
+  height: 229px;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  flex-shrink: 0;
+  border-radius: 12px;
 }
 
 @media (max-width: 1280px) {
@@ -100,6 +106,9 @@
 
   .menuBlockImage {
     width: calc((100% - 20px) / 2);
+    min-width: 0;
     max-width: 220px;
+    height: auto;
+    aspect-ratio: 263 / 229;
   }
 }

@@ -1,8 +1,8 @@
+'use client'
 import {MenuBlocksContainer} from "@/app/components/MenuBlocks/MenuBlocksStyles";
 import MenuBlock from "@/app/components/MenuBlocks/MenuBlock/MenuBlock";
-import MenuBlockReverse from "@/app/components/MenuBlocks/MenuBlock/MenuBlockReversStyles";
+import { menuBlocksContent } from "@/app/components/MenuBlocks/menuBlocksContent";
 import { LoginButton } from "@/app/components/auth/AuthStyles";
-import { redirect } from "next/dist/server/api-utils";
 import { useRouter } from 'next/navigation';
 
 export default function MenuBlocks(){
@@ -10,9 +10,10 @@ export default function MenuBlocks(){
     return(
         <>
             <MenuBlocksContainer>
-                <MenuBlock/>
-                <MenuBlockReverse/>
-                <LoginButton onClick={() => router.push('/menu')}>Смотреть все</LoginButton>
+                {menuBlocksContent.map((block) => (
+                    <MenuBlock key={block.id} {...block}/>
+                ))}
+                <LoginButton type="button" onClick={() => router.push('/menu')}>Смотреть все</LoginButton>
             </MenuBlocksContainer>
         </>
     )
