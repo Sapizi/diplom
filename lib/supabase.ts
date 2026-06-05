@@ -1,6 +1,9 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 let browserSupabase: SupabaseClient | null = null;
+let missingEnvWarningShown = false;
+
+export const SUPABASE_ENV_ERROR_MESSAGE = 'Отсутствуют переменные окружения Supabase';
 
 function getSupabaseEnv() {
   return {
@@ -14,6 +17,19 @@ export function hasSupabaseEnv() {
   return Boolean(supabaseUrl && supabaseAnonKey);
 }
 
+export function getSupabaseOrNull() {
+  if (!hasSupabaseEnv()) {
+    if (!missingEnvWarningShown && typeof window !== 'undefined') {
+      console.warn(SUPABASE_ENV_ERROR_MESSAGE);
+      missingEnvWarningShown = true;
+    }
+
+    return null;
+  }
+
+  return getSupabase();
+}
+
 export function getSupabase() {
   if (browserSupabase) {
     return browserSupabase;
@@ -22,7 +38,7 @@ export function getSupabase() {
   const { supabaseUrl, supabaseAnonKey } = getSupabaseEnv();
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Отсутствуют переменные окружения Supabase');
+    throw new Error(SUPABASE_ENV_ERROR_MESSAGE);
   }
 
   browserSupabase = createClient(supabaseUrl, supabaseAnonKey);

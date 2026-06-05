@@ -1,7 +1,17 @@
-import { getSupabase } from '../../../../lib/supabase';
+import { getSupabase, getSupabaseOrNull, SUPABASE_ENV_ERROR_MESSAGE } from '../../../../lib/supabase';
 import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 
 type SessionResult = Awaited<ReturnType<ReturnType<typeof getSupabase>['auth']['getSession']>>;
+type PasswordSignInResult = Awaited<
+  ReturnType<ReturnType<typeof getSupabase>['auth']['signInWithPassword']>
+>;
+type SignUpResult = Awaited<ReturnType<ReturnType<typeof getSupabase>['auth']['signUp']>>;
+type ResetPasswordResult = Awaited<
+  ReturnType<ReturnType<typeof getSupabase>['auth']['resetPasswordForEmail']>
+>;
+type UpdatePasswordResult = Awaited<ReturnType<ReturnType<typeof getSupabase>['auth']['updateUser']>>;
+type SignOutResult = Awaited<ReturnType<ReturnType<typeof getSupabase>['auth']['signOut']>>;
+type AuthStateChangeResult = ReturnType<ReturnType<typeof getSupabase>['auth']['onAuthStateChange']>;
 
 let cachedSession: Session | null | undefined;
 let sessionRequest: Promise<SessionResult> | null = null;
@@ -10,7 +20,24 @@ function setCachedSession(session: Session | null) {
   cachedSession = session;
 }
 
+function createMissingEnvError() {
+  return new Error(SUPABASE_ENV_ERROR_MESSAGE);
+}
+
+function getAuthClientOrNull() {
+  return getSupabaseOrNull()?.auth ?? null;
+}
+
 export async function getSession() {
+  const auth = getAuthClientOrNull();
+
+  if (!auth) {
+    return {
+      data: { session: null },
+      error: createMissingEnvError(),
+    } as unknown as SessionResult;
+  }
+
   if (cachedSession !== undefined) {
     if (cachedSession) {
       return {
@@ -26,7 +53,7 @@ export async function getSession() {
   }
 
   if (!sessionRequest) {
-    sessionRequest = getSupabase().auth
+    sessionRequest = auth
       .getSession()
       .then((result) => {
         setCachedSession(result.data.session ?? null);
@@ -49,7 +76,16 @@ export async function getCurrentUser(): Promise<User | null> {
 }
 
 export async function signInWithPassword(email: string, password: string) {
-  return getSupabase().auth.signInWithPassword({ email, password });
+  const auth = getAuthClientOrNull();
+
+  if (!auth) {
+    return {
+      data: { user: null, session: null },
+      error: createMissingEnvError(),
+    } as unknown as PasswordSignInResult;
+  }
+
+  return auth.signInWithPassword({ email, password });
 }
 
 export async function signUpWithEmail(
@@ -57,7 +93,16 @@ export async function signUpWithEmail(
   password: string,
   options?: { name?: string; phone?: string }
 ) {
-  return getSupabase().auth.signUp({
+  const auth = getAuthClientOrNull();
+
+  if (!auth) {
+    return {
+      data: { user: null, session: null },
+      error: createMissingEnvError(),
+    } as unknown as SignUpResult;
+  }
+
+  return auth.signUp({
     email,
     password,
     options: {
@@ -70,15 +115,41 @@ export async function signUpWithEmail(
 }
 
 export async function requestPasswordReset(email: string, redirectTo: string) {
-  return getSupabase().auth.resetPasswordForEmail(email, { redirectTo });
+  const auth = getAuthClientOrNull();
+
+  if (!auth) {
+    return {
+      data: {},
+      error: createMissingEnvError(),
+    } as unknown as ResetPasswordResult;
+  }
+
+  return auth.resetPasswordForEmail(email, { redirectTo });
 }
 
 export async function updatePassword(password: string) {
-  return getSupabase().auth.updateUser({ password });
+  const auth = getAuthClientOrNull();
+
+  if (!auth) {
+    return {
+      data: { user: null },
+      error: createMissingEnvError(),
+    } as unknown as UpdatePasswordResult;
+  }
+
+  return auth.updateUser({ password });
 }
 
 export async function signOut() {
-  return getSupabase().auth.signOut();
+  const auth = getAuthClientOrNull();
+
+  if (!auth) {
+    return {
+      error: createMissingEnvError(),
+    } as unknown as SignOutResult;
+  }
+
+  return auth.signOut();
 }
 
 export function redirectToHome() {
@@ -90,7 +161,20 @@ export function redirectToHome() {
 export function onAuthStateChange(
   callback: (event: AuthChangeEvent, session: Session | null) => void | Promise<void>
 ) {
-  return getSupabase().auth.onAuthStateChange((event, session) => {
+  const auth = getAuthClientOrNull();
+
+  if (!auth) {
+    return {
+      data: {
+        subscription: {
+          unsubscribe() {},
+        },
+      },
+      error: createMissingEnvError(),
+    } as unknown as AuthStateChangeResult;
+  }
+
+  return auth.onAuthStateChange((event, session) => {
     setCachedSession(session);
     return callback(event, session);
   });

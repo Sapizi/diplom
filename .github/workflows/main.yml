@@ -30,6 +30,12 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
+      - name: Validate required public env
+        if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+        run: |
+          test -n "$NEXT_PUBLIC_SUPABASE_URL" || (echo "Missing NEXT_PUBLIC_SUPABASE_URL secret" && exit 1)
+          test -n "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY" || (echo "Missing NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY secret" && exit 1)
+
       - name: Restore Next.js build cache
         uses: actions/cache@v4
         with:
@@ -57,6 +63,12 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Validate Docker public build args
+        if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+        run: |
+          test -n "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" || (echo "Missing NEXT_PUBLIC_SUPABASE_URL secret" && exit 1)
+          test -n "${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }}" || (echo "Missing NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY secret" && exit 1)
 
       - name: Extract Docker metadata
         id: meta
