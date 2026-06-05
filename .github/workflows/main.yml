@@ -14,12 +14,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }}
-      NEXT_PUBLIC_YANDEX_MAPS_API_KEY: ${{ vars.NEXT_PUBLIC_YANDEX_MAPS_API_KEY || secrets.NEXT_PUBLIC_YANDEX_MAPS_API_KEY }}
-      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY || secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
-      NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL || secrets.NEXT_PUBLIC_SITE_URL }}
-      NEXT_PUBLIC_SUPPORT_TELEGRAM_URL: ${{ vars.NEXT_PUBLIC_SUPPORT_TELEGRAM_URL || secrets.NEXT_PUBLIC_SUPPORT_TELEGRAM_URL }}
+      VAR_NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      SECRET_NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      VAR_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }}
+      SECRET_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }}
+      VAR_NEXT_PUBLIC_YANDEX_MAPS_API_KEY: ${{ vars.NEXT_PUBLIC_YANDEX_MAPS_API_KEY }}
+      SECRET_NEXT_PUBLIC_YANDEX_MAPS_API_KEY: ${{ secrets.NEXT_PUBLIC_YANDEX_MAPS_API_KEY }}
+      VAR_NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+      SECRET_NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+      VAR_NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+      SECRET_NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+      VAR_NEXT_PUBLIC_SUPPORT_TELEGRAM_URL: ${{ vars.NEXT_PUBLIC_SUPPORT_TELEGRAM_URL }}
+      SECRET_NEXT_PUBLIC_SUPPORT_TELEGRAM_URL: ${{ secrets.NEXT_PUBLIC_SUPPORT_TELEGRAM_URL }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,11 +36,40 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
+      - name: Resolve public env
+        shell: pwsh
+        run: |
+          $supabaseUrl = if ($env:VAR_NEXT_PUBLIC_SUPABASE_URL) { $env:VAR_NEXT_PUBLIC_SUPABASE_URL } else { $env:SECRET_NEXT_PUBLIC_SUPABASE_URL }
+          $supabaseKey = if ($env:VAR_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY) { $env:VAR_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY } else { $env:SECRET_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }
+          $mapsKey = if ($env:VAR_NEXT_PUBLIC_YANDEX_MAPS_API_KEY) { $env:VAR_NEXT_PUBLIC_YANDEX_MAPS_API_KEY } else { $env:SECRET_NEXT_PUBLIC_YANDEX_MAPS_API_KEY }
+          $vapidKey = if ($env:VAR_NEXT_PUBLIC_VAPID_PUBLIC_KEY) { $env:VAR_NEXT_PUBLIC_VAPID_PUBLIC_KEY } else { $env:SECRET_NEXT_PUBLIC_VAPID_PUBLIC_KEY }
+          $siteUrl = if ($env:VAR_NEXT_PUBLIC_SITE_URL) { $env:VAR_NEXT_PUBLIC_SITE_URL } else { $env:SECRET_NEXT_PUBLIC_SITE_URL }
+          $supportUrl = if ($env:VAR_NEXT_PUBLIC_SUPPORT_TELEGRAM_URL) { $env:VAR_NEXT_PUBLIC_SUPPORT_TELEGRAM_URL } else { $env:SECRET_NEXT_PUBLIC_SUPPORT_TELEGRAM_URL }
+
+          "NEXT_PUBLIC_SUPABASE_URL=$supabaseUrl" >> $env:GITHUB_ENV
+          "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=$supabaseKey" >> $env:GITHUB_ENV
+          "NEXT_PUBLIC_YANDEX_MAPS_API_KEY=$mapsKey" >> $env:GITHUB_ENV
+          "NEXT_PUBLIC_VAPID_PUBLIC_KEY=$vapidKey" >> $env:GITHUB_ENV
+          "NEXT_PUBLIC_SITE_URL=$siteUrl" >> $env:GITHUB_ENV
+          "NEXT_PUBLIC_SUPPORT_TELEGRAM_URL=$supportUrl" >> $env:GITHUB_ENV
+
+      - name: Diagnose public env
+        if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+        shell: pwsh
+        run: |
+          Write-Host "vars.NEXT_PUBLIC_SUPABASE_URL present: $([bool]$env:VAR_NEXT_PUBLIC_SUPABASE_URL)"
+          Write-Host "secrets.NEXT_PUBLIC_SUPABASE_URL present: $([bool]$env:SECRET_NEXT_PUBLIC_SUPABASE_URL)"
+          Write-Host "resolved NEXT_PUBLIC_SUPABASE_URL present: $([bool]$env:NEXT_PUBLIC_SUPABASE_URL)"
+          Write-Host "vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY present: $([bool]$env:VAR_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY)"
+          Write-Host "secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY present: $([bool]$env:SECRET_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY)"
+          Write-Host "resolved NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY present: $([bool]$env:NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY)"
+
       - name: Validate required public env
         if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+        shell: pwsh
         run: |
-          test -n "$NEXT_PUBLIC_SUPABASE_URL" || (echo "Missing NEXT_PUBLIC_SUPABASE_URL secret" && exit 1)
-          test -n "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY" || (echo "Missing NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY secret" && exit 1)
+          if (-not $env:NEXT_PUBLIC_SUPABASE_URL) { Write-Error "Missing NEXT_PUBLIC_SUPABASE_URL in both GitHub Variables and Secrets"; exit 1 }
+          if (-not $env:NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY) { Write-Error "Missing NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY in both GitHub Variables and Secrets"; exit 1 }
 
       - name: Restore Next.js build cache
         uses: actions/cache@v4
@@ -57,6 +92,19 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      VAR_NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      SECRET_NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      VAR_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }}
+      SECRET_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }}
+      VAR_NEXT_PUBLIC_YANDEX_MAPS_API_KEY: ${{ vars.NEXT_PUBLIC_YANDEX_MAPS_API_KEY }}
+      SECRET_NEXT_PUBLIC_YANDEX_MAPS_API_KEY: ${{ secrets.NEXT_PUBLIC_YANDEX_MAPS_API_KEY }}
+      VAR_NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+      SECRET_NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+      VAR_NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+      SECRET_NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+      VAR_NEXT_PUBLIC_SUPPORT_TELEGRAM_URL: ${{ vars.NEXT_PUBLIC_SUPPORT_TELEGRAM_URL }}
+      SECRET_NEXT_PUBLIC_SUPPORT_TELEGRAM_URL: ${{ secrets.NEXT_PUBLIC_SUPPORT_TELEGRAM_URL }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -64,14 +112,37 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Resolve Docker public build args
+        id: docker_public_env
+        shell: pwsh
+        run: |
+          $supabaseUrl = if ($env:VAR_NEXT_PUBLIC_SUPABASE_URL) { $env:VAR_NEXT_PUBLIC_SUPABASE_URL } else { $env:SECRET_NEXT_PUBLIC_SUPABASE_URL }
+          $supabaseKey = if ($env:VAR_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY) { $env:VAR_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY } else { $env:SECRET_NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }
+          $mapsKey = if ($env:VAR_NEXT_PUBLIC_YANDEX_MAPS_API_KEY) { $env:VAR_NEXT_PUBLIC_YANDEX_MAPS_API_KEY } else { $env:SECRET_NEXT_PUBLIC_YANDEX_MAPS_API_KEY }
+          $vapidKey = if ($env:VAR_NEXT_PUBLIC_VAPID_PUBLIC_KEY) { $env:VAR_NEXT_PUBLIC_VAPID_PUBLIC_KEY } else { $env:SECRET_NEXT_PUBLIC_VAPID_PUBLIC_KEY }
+          $siteUrl = if ($env:VAR_NEXT_PUBLIC_SITE_URL) { $env:VAR_NEXT_PUBLIC_SITE_URL } else { $env:SECRET_NEXT_PUBLIC_SITE_URL }
+          $supportUrl = if ($env:VAR_NEXT_PUBLIC_SUPPORT_TELEGRAM_URL) { $env:VAR_NEXT_PUBLIC_SUPPORT_TELEGRAM_URL } else { $env:SECRET_NEXT_PUBLIC_SUPPORT_TELEGRAM_URL }
+
+          "NEXT_PUBLIC_SUPABASE_URL=$supabaseUrl" >> $env:GITHUB_ENV
+          "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=$supabaseKey" >> $env:GITHUB_ENV
+          "NEXT_PUBLIC_YANDEX_MAPS_API_KEY=$mapsKey" >> $env:GITHUB_ENV
+          "NEXT_PUBLIC_VAPID_PUBLIC_KEY=$vapidKey" >> $env:GITHUB_ENV
+          "NEXT_PUBLIC_SITE_URL=$siteUrl" >> $env:GITHUB_ENV
+          "NEXT_PUBLIC_SUPPORT_TELEGRAM_URL=$supportUrl" >> $env:GITHUB_ENV
+
+          "next_public_supabase_url=$supabaseUrl" >> $env:GITHUB_OUTPUT
+          "next_public_supabase_publishable_default_key=$supabaseKey" >> $env:GITHUB_OUTPUT
+          "next_public_yandex_maps_api_key=$mapsKey" >> $env:GITHUB_OUTPUT
+          "next_public_vapid_public_key=$vapidKey" >> $env:GITHUB_OUTPUT
+          "next_public_site_url=$siteUrl" >> $env:GITHUB_OUTPUT
+          "next_public_support_telegram_url=$supportUrl" >> $env:GITHUB_OUTPUT
+
       - name: Validate Docker public build args
         if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
-        env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }}
+        shell: pwsh
         run: |
-          test -n "$NEXT_PUBLIC_SUPABASE_URL" || (echo "Missing NEXT_PUBLIC_SUPABASE_URL secret or variable" && exit 1)
-          test -n "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY" || (echo "Missing NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY secret or variable" && exit 1)
+          if (-not $env:NEXT_PUBLIC_SUPABASE_URL) { Write-Error "Missing NEXT_PUBLIC_SUPABASE_URL in both GitHub Variables and Secrets"; exit 1 }
+          if (-not $env:NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY) { Write-Error "Missing NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY in both GitHub Variables and Secrets"; exit 1 }
 
       - name: Extract Docker metadata
         id: meta
@@ -101,11 +172,11 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            NEXT_PUBLIC_SUPABASE_URL=${{ vars.NEXT_PUBLIC_SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
-            NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }}
-            NEXT_PUBLIC_YANDEX_MAPS_API_KEY=${{ vars.NEXT_PUBLIC_YANDEX_MAPS_API_KEY || secrets.NEXT_PUBLIC_YANDEX_MAPS_API_KEY }}
-            NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY || secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
-            NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL || secrets.NEXT_PUBLIC_SITE_URL }}
-            NEXT_PUBLIC_SUPPORT_TELEGRAM_URL=${{ vars.NEXT_PUBLIC_SUPPORT_TELEGRAM_URL || secrets.NEXT_PUBLIC_SUPPORT_TELEGRAM_URL }}
+            NEXT_PUBLIC_SUPABASE_URL=${{ steps.docker_public_env.outputs.next_public_supabase_url }}
+            NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=${{ steps.docker_public_env.outputs.next_public_supabase_publishable_default_key }}
+            NEXT_PUBLIC_YANDEX_MAPS_API_KEY=${{ steps.docker_public_env.outputs.next_public_yandex_maps_api_key }}
+            NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ steps.docker_public_env.outputs.next_public_vapid_public_key }}
+            NEXT_PUBLIC_SITE_URL=${{ steps.docker_public_env.outputs.next_public_site_url }}
+            NEXT_PUBLIC_SUPPORT_TELEGRAM_URL=${{ steps.docker_public_env.outputs.next_public_support_telegram_url }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
