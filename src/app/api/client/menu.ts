@@ -1,4 +1,4 @@
-import { supabase } from '../../../../lib/supabase';
+import { getSupabase } from '../../../../lib/supabase';
 import { requestJson } from './http';
 
 export type MenuItemType = {
@@ -104,9 +104,9 @@ export async function deleteMenuItem(id: string) {
 }
 
 export async function uploadMenuImage(fileName: string, file: File) {
-  return supabase.storage.from('menu-images').upload(fileName, file);
+  return getSupabase().storage.from('menu-images').upload(fileName, file);
 }
 
 export function getMenuImagePublicUrl(fileName: string) {
-  return supabase.storage.from('menu-images').getPublicUrl(fileName);
+  return getSupabase().storage.from('menu-images').getPublicUrl(fileName);
 }

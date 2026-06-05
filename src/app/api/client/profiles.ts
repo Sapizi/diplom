@@ -1,4 +1,4 @@
-import { supabase } from '../../../../lib/supabase';
+import { getSupabase } from '../../../../lib/supabase';
 import { requestJson } from './http';
 
 export type ProfileSummary = {
@@ -255,11 +255,11 @@ export async function fetchAdminUsers() {
 }
 
 export async function uploadAvatar(fileName: string, file: File) {
-  return supabase.storage.from('avatars').upload(fileName, file);
+  return getSupabase().storage.from('avatars').upload(fileName, file);
 }
 
 export function getAvatarPublicUrl(fileName: string) {
-  return supabase.storage.from('avatars').getPublicUrl(fileName);
+  return getSupabase().storage.from('avatars').getPublicUrl(fileName);
 }
 
 export async function getIsAdmin(userId: string) {

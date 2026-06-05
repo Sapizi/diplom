@@ -1,7 +1,7 @@
-import { supabase } from '../../../../lib/supabase';
+import { getSupabase } from '../../../../lib/supabase';
 import type { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
 
-type SessionResult = Awaited<ReturnType<typeof supabase.auth.getSession>>;
+type SessionResult = Awaited<ReturnType<ReturnType<typeof getSupabase>['auth']['getSession']>>;
 
 let cachedSession: Session | null | undefined;
 let sessionRequest: Promise<SessionResult> | null = null;
@@ -26,7 +26,7 @@ export async function getSession() {
   }
 
   if (!sessionRequest) {
-    sessionRequest = supabase.auth
+    sessionRequest = getSupabase().auth
       .getSession()
       .then((result) => {
         setCachedSession(result.data.session ?? null);
@@ -49,7 +49,7 @@ export async function getCurrentUser(): Promise<User | null> {
 }
 
 export async function signInWithPassword(email: string, password: string) {
-  return supabase.auth.signInWithPassword({ email, password });
+  return getSupabase().auth.signInWithPassword({ email, password });
 }
 
 export async function signUpWithEmail(
@@ -57,7 +57,7 @@ export async function signUpWithEmail(
   password: string,
   options?: { name?: string; phone?: string }
 ) {
-  return supabase.auth.signUp({
+  return getSupabase().auth.signUp({
     email,
     password,
     options: {
@@ -70,15 +70,15 @@ export async function signUpWithEmail(
 }
 
 export async function requestPasswordReset(email: string, redirectTo: string) {
-  return supabase.auth.resetPasswordForEmail(email, { redirectTo });
+  return getSupabase().auth.resetPasswordForEmail(email, { redirectTo });
 }
 
 export async function updatePassword(password: string) {
-  return supabase.auth.updateUser({ password });
+  return getSupabase().auth.updateUser({ password });
 }
 
 export async function signOut() {
-  return supabase.auth.signOut();
+  return getSupabase().auth.signOut();
 }
 
 export function redirectToHome() {
@@ -90,7 +90,7 @@ export function redirectToHome() {
 export function onAuthStateChange(
   callback: (event: AuthChangeEvent, session: Session | null) => void | Promise<void>
 ) {
-  return supabase.auth.onAuthStateChange((event, session) => {
+  return getSupabase().auth.onAuthStateChange((event, session) => {
     setCachedSession(session);
     return callback(event, session);
   });

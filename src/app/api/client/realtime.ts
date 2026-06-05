@@ -1,6 +1,7 @@
-import { supabase } from '../../../../lib/supabase';
+import { getSupabase } from '../../../../lib/supabase';
 
 export function subscribeAdminDashboard(onChange: () => void) {
+  const supabase = getSupabase();
   const channel = supabase
     .channel('admin-dashboard')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, onChange)
@@ -16,6 +17,7 @@ export function subscribeAdminDashboard(onChange: () => void) {
 }
 
 export function subscribeOrdersFeed(onChange: () => void, channelName = 'orders-feed') {
+  const supabase = getSupabase();
   const channel = supabase
     .channel(channelName)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => onChange())
@@ -33,6 +35,7 @@ export function subscribeOrdersFeed(onChange: () => void, channelName = 'orders-
 }
 
 export function subscribeManagerWorkspace(onChange: () => void, channelName = 'manager-workspace') {
+  const supabase = getSupabase();
   const channel = supabase
     .channel(channelName)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => onChange())
@@ -53,6 +56,7 @@ export function subscribeCourierWorkspace(
   onChange: () => void,
   channelName = 'courier-workspace'
 ) {
+  const supabase = getSupabase();
   const channel = supabase
     .channel(channelName)
     .on(
@@ -74,6 +78,7 @@ export function subscribeCourierWorkspace(
 }
 
 export function subscribeCourierProfile(userId: string, onChange: () => void, channelName = 'courier-profile') {
+  const supabase = getSupabase();
   const channel = supabase
     .channel(channelName)
     .on(
