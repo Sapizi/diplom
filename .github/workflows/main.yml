@@ -14,12 +14,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }}
-      NEXT_PUBLIC_YANDEX_MAPS_API_KEY: ${{ secrets.NEXT_PUBLIC_YANDEX_MAPS_API_KEY }}
-      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
-      NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
-      NEXT_PUBLIC_SUPPORT_TELEGRAM_URL: ${{ secrets.NEXT_PUBLIC_SUPPORT_TELEGRAM_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }}
+      NEXT_PUBLIC_YANDEX_MAPS_API_KEY: ${{ vars.NEXT_PUBLIC_YANDEX_MAPS_API_KEY || secrets.NEXT_PUBLIC_YANDEX_MAPS_API_KEY }}
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${{ vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY || secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+      NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL || secrets.NEXT_PUBLIC_SITE_URL }}
+      NEXT_PUBLIC_SUPPORT_TELEGRAM_URL: ${{ vars.NEXT_PUBLIC_SUPPORT_TELEGRAM_URL || secrets.NEXT_PUBLIC_SUPPORT_TELEGRAM_URL }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -66,9 +66,12 @@ jobs:
 
       - name: Validate Docker public build args
         if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }}
         run: |
-          test -n "${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" || (echo "Missing NEXT_PUBLIC_SUPABASE_URL secret" && exit 1)
-          test -n "${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }}" || (echo "Missing NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY secret" && exit 1)
+          test -n "$NEXT_PUBLIC_SUPABASE_URL" || (echo "Missing NEXT_PUBLIC_SUPABASE_URL secret or variable" && exit 1)
+          test -n "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY" || (echo "Missing NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY secret or variable" && exit 1)
 
       - name: Extract Docker metadata
         id: meta
@@ -98,11 +101,11 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-            NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }}
-            NEXT_PUBLIC_YANDEX_MAPS_API_KEY=${{ secrets.NEXT_PUBLIC_YANDEX_MAPS_API_KEY }}
-            NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
-            NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}
-            NEXT_PUBLIC_SUPPORT_TELEGRAM_URL=${{ secrets.NEXT_PUBLIC_SUPPORT_TELEGRAM_URL }}
+            NEXT_PUBLIC_SUPABASE_URL=${{ vars.NEXT_PUBLIC_SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
+            NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY }}
+            NEXT_PUBLIC_YANDEX_MAPS_API_KEY=${{ vars.NEXT_PUBLIC_YANDEX_MAPS_API_KEY || secrets.NEXT_PUBLIC_YANDEX_MAPS_API_KEY }}
+            NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ vars.NEXT_PUBLIC_VAPID_PUBLIC_KEY || secrets.NEXT_PUBLIC_VAPID_PUBLIC_KEY }}
+            NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL || secrets.NEXT_PUBLIC_SITE_URL }}
+            NEXT_PUBLIC_SUPPORT_TELEGRAM_URL=${{ vars.NEXT_PUBLIC_SUPPORT_TELEGRAM_URL || secrets.NEXT_PUBLIC_SUPPORT_TELEGRAM_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
